@@ -715,48 +715,85 @@ function downloadNotebook() {
     ].join('\n')));
   }
 
-  // Run
-  const saveCode = useDrive
-    ? [
-        '',
-        '# Copy to Drive',
-        'import shutil',
-        `shutil.copy("/content/report.json", f"{SAVE_DIR}/${fname}")`,
-        `print(f"\\nSaved to {SAVE_DIR}/${fname}")`
-      ].join('\n')
-    : [
-        '',
-        '# Download report',
-        'from google.colab import files',
-        `files.download("/content/report.json")`
-      ].join('\n');
-
+  // Run — use ! magic with {var} interpolation for real-time output
   cells.push(codeCell([
-    `# Run modeldelta`,
     `MODEL_A = "${a}"`,
     `MODEL_B = "${b}"`,
     ``,
-    `import subprocess, sys`,
-    `subprocess.run([sys.executable, "-m", "modeldelta", MODEL_A, MODEL_B, "-o", "/content/report.json"], check=True)`,
-    saveCode
+    `!modeldelta {MODEL_A} {MODEL_B} -o /content/report.json`
   ].join('\n')));
 
-  // Display results
+  // Save / download
+  if (useDrive) {
+    cells.push(codeCell([
+      '# Copy to Drive',
+      'import shutil',
+      `shutil.copy("/content/report.json", f"{SAVE_DIR}/${fname}")`,
+      `print(f"Saved to {SAVE_DIR}/${fname}")`
+    ].join('\n')));
+  } else {
+    cells.push(codeCell([
+      '# Download report',
+      'from google.colab import files',
+      'files.download("/content/report.json")'
+    ].join('\n')));
+  }
+
+  // Display results — formatted HTML + bar chart
   cells.push(codeCell([
-    '# Display results',
+    '# ── Display results ──',
     'import json',
+    'from IPython.display import display, HTML',
     '',
     'with open("/content/report.json") as f:',
     '    data = json.load(f)',
     '',
     'diag = data["diagnostics"]',
-    'print(f"Profile: {diag[\'profile_tag\'].upper()}")',
-    'print(f"\\n{diag[\'summary\']}")',
-    'print(f"\\nFindings:")',
+    'tag = diag["profile_tag"].upper()',
+    'colors = {"SURGICAL": "#10b981", "STANDARD": "#38bdf8", "HEAVY": "#f59e0b", "EXTREME": "#ef4444"}',
+    'color = colors.get(tag, "#94a3b8")',
+    '',
+    '# Summary card',
+    'html = f"""',
+    '<div style="background:#1e293b;padding:20px;border-radius:12px;border-top:4px solid {color};',
+    '     font-family:system-ui;color:#e2e8f0;max-width:800px;margin:10px 0">',
+    '  <h2 style="margin:0 0 8px"><span style="background:{color};color:#0f172a;padding:4px 12px;',
+    '       border-radius:6px;font-size:14px;margin-right:8px">{tag}</span>',
+    '       {data["model_a"]} &rarr; {data["model_b"]}</h2>',
+    '  <p style="color:#94a3b8;margin:8px 0">{diag["summary"]}</p>',
+    '  <hr style="border-color:#334155;margin:12px 0">',
+    '"""',
+    '',
     'for f in diag.get("findings", []):',
-    '    marker = "\\u2022" if f["severity"] == "info" else "\\u25b8"',
-    '    print(f"  {marker} {f[\'title\']}")',
-    '    print(f"    {f[\'detail\']}")'
+    '    icon = "&#9679;" if f["severity"] == "info" else "&#9656;"',
+    '    html += f\'<p style="margin:6px 0"><b>{icon} {f["title"]}</b><br>\'',
+    '    html += f\'<span style="color:#94a3b8;font-size:14px">{f["detail"]}</span></p>\'',
+    '',
+    'html += "</div>"',
+    'display(HTML(html))'
+  ].join('\n')));
+
+  // Bar chart of top modules
+  cells.push(codeCell([
+    '# ── Top changed modules ──',
+    'import matplotlib.pyplot as plt',
+    '',
+    'modules = sorted(data["modules"], key=lambda m: m["frob_norm_relative"], reverse=True)[:15]',
+    'names = [m["name"].split(".")[-2] + "." + m["name"].split(".")[-1]',
+    '         if "." in m["name"] else m["name"] for m in modules]',
+    'values = [m["frob_norm_relative"] for m in modules]',
+    '',
+    'fig, ax = plt.subplots(figsize=(10, 5))',
+    'bars = ax.barh(range(len(names)), values, color=color, alpha=0.85)',
+    'ax.set_yticks(range(len(names)))',
+    'ax.set_yticklabels(names, fontsize=10)',
+    'ax.invert_yaxis()',
+    'ax.set_xlabel("Relative change (||\\u0394W|| / ||W||)", fontsize=12)',
+    'ax.set_title(f"Top {len(names)} most changed modules", fontsize=14)',
+    'ax.spines["top"].set_visible(False)',
+    'ax.spines["right"].set_visible(False)',
+    'plt.tight_layout()',
+    'plt.show()'
   ].join('\n')));
 
   const nb = {
