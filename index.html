@@ -612,7 +612,7 @@
       <div class="method-card">
         <h4><span class="method-icon">&#x2601;</span> Google Colab</h4>
         <p>For models &gt;3B. Free CPU runtime. ~18 min per 7B pair.</p>
-        <code>Coming soon &mdash; notebook generator</code>
+        <button class="btn btn-primary" style="margin-top:8px;font-size:14px;" onclick="downloadNotebook()">Download notebook</button>
       </div>
       <div class="method-card">
         <h4><span class="method-icon">&#x26A1;</span> Online (&#x2264;3B)</h4>
@@ -648,7 +648,7 @@
 </div>
 
 <footer>
-  <p>modeldelta v0.1.0 &middot; MIT License &middot;
+  <p>modeldelta v0.2.0 &middot; MIT License &middot;
   <a href="https://github.com/nick-yudin/modeldelta">GitHub</a> &middot;
   <a href="https://pypi.org/project/modeldelta/">PyPI</a></p>
 </footer>
@@ -665,6 +665,94 @@ function updateCmd() {
 }
 modelA.addEventListener('input', updateCmd);
 modelB.addEventListener('input', updateCmd);
+
+// ── Notebook generator ──
+function downloadNotebook() {
+  const a = modelA.value.trim() || 'Qwen/Qwen2.5-3B';
+  const b = modelB.value.trim() || 'Qwen/Qwen2.5-3B-Instruct';
+  const shortA = a.split('/').pop();
+  const shortB = b.split('/').pop();
+
+  const nb = {
+    nbformat: 4,
+    nbformat_minor: 5,
+    metadata: {
+      kernelspec: { display_name: "Python 3", language: "python", name: "python3" },
+      language_info: { name: "python", version: "3.10.0" },
+      colab: { provenance: [] }
+    },
+    cells: [
+      mdCell([
+        `# modeldelta: ${shortA} \u2192 ${shortB}\n`,
+        `\n`,
+        `**What this notebook does:**\n`,
+        `- Installs [modeldelta](https://pypi.org/project/modeldelta/) from PyPI\n`,
+        `- Compares weight deltas between \`${a}\` and \`${b}\`\n`,
+        `- Produces a diagnostic profile (surgical / standard / heavy / extreme)\n`,
+        `- Saves JSON report to Google Drive\n`,
+        `\n`,
+        `**Runtime:** CPU is enough. ~18 min for 7B models, ~5 min for 3B.\n`,
+        `\n`,
+        `Generated at [nick-yudin.github.io/modeldelta](https://nick-yudin.github.io/modeldelta/)`
+      ].join('')),
+      codeCell('!pip install -q modeldelta>=0.2.0'),
+      codeCell([
+        '# Mount Google Drive for saving results',
+        'from google.colab import drive',
+        'drive.mount("/content/drive")',
+        '',
+        'import os',
+        'SAVE_DIR = "/content/drive/MyDrive/modeldelta_reports"',
+        'os.makedirs(SAVE_DIR, exist_ok=True)',
+        'print(f"Reports will be saved to {SAVE_DIR}")'
+      ].join('\n')),
+      codeCell([
+        `# Run modeldelta`,
+        `MODEL_A = "${a}"`,
+        `MODEL_B = "${b}"`,
+        ``,
+        `!modeldelta "$MODEL_A" "$MODEL_B" -o /content/report.json`,
+        ``,
+        `# Copy to Drive`,
+        `import shutil`,
+        `fname = f"${shortA}_vs_${shortB}.json".replace("/", "_")`,
+        `shutil.copy("/content/report.json", f"{SAVE_DIR}/{fname}")`,
+        `print(f"\\nSaved to {SAVE_DIR}/{fname}")`
+      ].join('\n')),
+      codeCell([
+        '# Display results',
+        'import json',
+        '',
+        'with open("/content/report.json") as f:',
+        '    data = json.load(f)',
+        '',
+        'diag = data["diagnostics"]',
+        'print(f"Profile: {diag[\'profile_tag\'].upper()}")',
+        'print(f"\\n{diag[\'summary\']}")',
+        'print(f"\\nFindings:")',
+        'for f in diag.get("findings", []):',
+        '    marker = "\\u2022" if f["severity"] == "info" else "\\u25b8"',
+        '    print(f"  {marker} {f[\'title\']}")',
+        '    print(f"    {f[\'detail\']}")'
+      ].join('\n'))
+    ]
+  };
+
+  const blob = new Blob([JSON.stringify(nb, null, 1)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `modeldelta_${shortA}_vs_${shortB}.ipynb`.replace(/\//g, '_');
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function mdCell(source) {
+  return { cell_type: "markdown", metadata: {}, source: [source] };
+}
+function codeCell(source) {
+  return { cell_type: "code", metadata: {}, source: [source], outputs: [], execution_count: null };
+}
 </script>
 
 </body></html>
