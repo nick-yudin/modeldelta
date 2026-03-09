@@ -23,7 +23,7 @@ def generate_json(
     }
 
     if include_diagnostics:
-        from model_diff.report.diagnostics import diagnose
+        from modeldelta.report.diagnostics import diagnose
         diag = diagnose(modules, model_a, model_b)
         data["diagnostics"] = {
             "summary": diag.summary,

@@ -7,6 +7,8 @@ pip install modeldelta
 modeldelta Qwen/Qwen2.5-7B Qwen/Qwen2.5-7B-Instruct -o report.html
 ```
 
+**[Live demo & precomputed reports →](https://nick-yudin.github.io/modeldelta/)**
+
 ## What it does
 
 Compares two model checkpoints (base vs instruct, v1 vs v2, merge A vs merge B) and produces:

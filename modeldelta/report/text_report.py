@@ -44,7 +44,7 @@ def generate_text(
         lines.append(f"  ... and {len(by_frob) - top_n} more modules")
 
     if include_diagnostics:
-        from model_diff.report.diagnostics import diagnose, format_diagnosis_text
+        from modeldelta.report.diagnostics import diagnose, format_diagnosis_text
         diag_report = diagnose(modules, model_a, model_b)
         lines.append(format_diagnosis_text(diag_report))
 

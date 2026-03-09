@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from contextlib import contextmanager
 from pathlib import Path
 
 import torch
@@ -11,14 +12,29 @@ from huggingface_hub import snapshot_download
 from safetensors import safe_open
 
 
-def download_safetensors(model_id: str, token: str | None = None) -> str:
+@contextmanager
+def _suppress_hf_progress():
+    """Temporarily disable huggingface_hub progress bars."""
+    try:
+        from huggingface_hub.utils import disable_progress_bars, enable_progress_bars
+        disable_progress_bars()
+        yield
+        enable_progress_bars()
+    except ImportError:
+        yield
+
+
+def download_safetensors(model_id: str, token: str | None = None, quiet: bool = False) -> str:
     """Download only safetensors files + index. Returns local path."""
-    path = snapshot_download(
-        model_id,
+    kwargs = dict(
+        repo_id=model_id,
         allow_patterns=["*.safetensors", "*.safetensors.index.json", "config.json"],
         token=token or os.environ.get("HF_TOKEN"),
     )
-    return path
+    if quiet:
+        with _suppress_hf_progress():
+            return snapshot_download(**kwargs)
+    return snapshot_download(**kwargs)
 
 
 def get_tensor_map(model_path: str) -> dict[str, str]:
@@ -43,8 +59,8 @@ def load_tensor(tensor_map: dict[str, str], name: str) -> torch.Tensor:
         return f.get_tensor(name)
 
 
-def resolve_model(model_id_or_path: str, token: str | None = None) -> str:
+def resolve_model(model_id_or_path: str, token: str | None = None, quiet: bool = False) -> str:
     """Resolve a model ID or local path to a local directory."""
     if os.path.isdir(model_id_or_path):
         return model_id_or_path
-    return download_safetensors(model_id_or_path, token=token)
+    return download_safetensors(model_id_or_path, token=token, quiet=quiet)

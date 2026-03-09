@@ -41,7 +41,7 @@ def pairs_from_results_dir(results_dir: str) -> list[PairCard]:
         if not isinstance(modules, list) or not modules:
             continue
 
-        from model_diff.report.diagnostics import diagnose
+        from modeldelta.report.diagnostics import diagnose
         model_a = data.get("model_a", fname.replace(".json", ""))
         model_b = data.get("model_b", fname.replace(".json", ""))
         diag = diagnose(modules, model_a, model_b)
@@ -602,7 +602,7 @@ def generate_landing_page(
 </div>
 
 <footer>
-  <p>modeldelta v{__import__('model_diff').__version__} &middot; MIT License &middot;
+  <p>modeldelta v{__import__('modeldelta').__version__} &middot; MIT License &middot;
   <a href="https://github.com/nick-yudin/modeldelta">GitHub</a> &middot;
   <a href="https://pypi.org/project/modeldelta/">PyPI</a></p>
 </footer>

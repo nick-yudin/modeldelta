@@ -40,7 +40,7 @@ PAIRS_FEATURES = {
     "diagnosis_summary": "string", # Human-readable paragraph
 
     # Metadata
-    "model_diff_version": "string",
+    "modeldelta_version": "string",
     "computed_at": "string",       # ISO timestamp
     "computed_by": "string",       # "cli" / "colab" / "space"
     "top_k": "int32",              # SVD top-k parameter used
@@ -93,7 +93,7 @@ def results_to_pair_row(
     """Convert analysis results to a pairs table row."""
     import math
     from datetime import datetime, timezone
-    import model_diff
+    import modeldelta
 
     svd_mods = [m for m in modules if m.get("has_svd")]
 
@@ -120,7 +120,7 @@ def results_to_pair_row(
         "mean_sparsity": _safe_mean([m["sparsity"] for m in modules]),
         "profile_tag": profile_tag,
         "diagnosis_summary": diagnosis_summary,
-        "model_diff_version": model_diff.__version__,
+        "modeldelta_version": modeldelta.__version__,
         "computed_at": datetime.now(timezone.utc).isoformat(),
         "computed_by": computed_by,
         "top_k": top_k,

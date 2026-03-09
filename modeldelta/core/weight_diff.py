@@ -129,7 +129,7 @@ def compare_models(
 
     Returns (results_list, n_skipped).
     """
-    from model_diff.utils.model_loader import load_tensor
+    from modeldelta.utils.model_loader import load_tensor
 
     names_a = set(tensor_map_a.keys())
     names_b = set(tensor_map_b.keys())

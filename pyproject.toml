@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "modeldelta"
-version = "0.1.0"
+version = "0.2.0"
 description = "CLI tool to compare model checkpoints — weight deltas, SVD structure, layer drift"
 requires-python = ">=3.9"
 license = "MIT"
@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-modeldelta = "model_diff.cli:main"
+modeldelta = "modeldelta.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["model_diff*"]
+include = ["modeldelta*"]
