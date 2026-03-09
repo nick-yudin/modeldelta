@@ -603,8 +603,7 @@ def generate_landing_page(
 
 <footer>
   <p>model-diff v{__import__('model_diff').__version__} &middot; MIT License &middot;
-  <a href="https://github.com/your-repo/model-diff">GitHub</a> &middot;
-  <a href="https://pypi.org/project/model-diff/">PyPI</a></p>
+  <a href="https://github.com/nick-yudin/model-diff">GitHub</a></p>
 </footer>
 
 <script>
