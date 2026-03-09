@@ -3,7 +3,7 @@
 **See what changed inside any model checkpoint.** Weight deltas, SVD structure, spectral analysis, and diagnostic conclusions — in one command.
 
 ```bash
-pip install model-diff
+pip install modeldelta
 model-diff Qwen/Qwen2.5-7B Qwen/Qwen2.5-7B-Instruct -o report.html
 ```
 

@@ -496,8 +496,8 @@ def generate_landing_page(
     <a class="btn btn-primary" href="#compare">Compare models</a>
     <a class="btn btn-secondary" href="#gallery">Browse results</a>
   </div>
-  <div class="install-cmd" onclick="navigator.clipboard.writeText('pip install model-diff')" title="Click to copy">
-    $ pip install model-diff
+  <div class="install-cmd" onclick="navigator.clipboard.writeText('pip install modeldelta')" title="Click to copy">
+    $ pip install modeldelta
   </div>
 </div>
 
@@ -604,7 +604,7 @@ def generate_landing_page(
 <footer>
   <p>model-diff v{__import__('model_diff').__version__} &middot; MIT License &middot;
   <a href="https://github.com/nick-yudin/model-diff">GitHub</a> &middot;
-  <a href="https://pypi.org/project/model-diff/">PyPI</a></p>
+  <a href="https://pypi.org/project/modeldelta/">PyPI</a></p>
 </footer>
 
 <script>

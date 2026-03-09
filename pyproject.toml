@@ -3,11 +3,13 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "model-diff"
+name = "modeldelta"
 version = "0.1.0"
 description = "CLI tool to compare model checkpoints — weight deltas, SVD structure, layer drift"
 requires-python = ">=3.9"
-license = {text = "MIT"}
+license = "MIT"
+authors = [{name = "Nick Yudin"}]
+readme = "README.md"
 dependencies = [
     "torch>=2.0",
     "safetensors>=0.4",
