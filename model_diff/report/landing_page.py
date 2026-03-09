@@ -566,7 +566,7 @@ def generate_landing_page(
       <div class="method-card">
         <h4><span class="method-icon">&#x2601;</span> Google Colab</h4>
         <p>For models &gt;3B. Free CPU runtime. ~18 min per 7B pair.</p>
-        <code id="colab-cmd">Click to generate notebook &#x2192;</code>
+        <code>Coming soon &mdash; notebook generator</code>
       </div>
       <div class="method-card">
         <h4><span class="method-icon">&#x26A1;</span> Online (&#x2264;3B)</h4>
@@ -603,7 +603,8 @@ def generate_landing_page(
 
 <footer>
   <p>model-diff v{__import__('model_diff').__version__} &middot; MIT License &middot;
-  <a href="https://github.com/nick-yudin/model-diff">GitHub</a></p>
+  <a href="https://github.com/nick-yudin/model-diff">GitHub</a> &middot;
+  <a href="https://pypi.org/project/model-diff/">PyPI</a></p>
 </footer>
 
 <script>
