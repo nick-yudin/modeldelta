@@ -736,7 +736,8 @@ function downloadNotebook() {
     `MODEL_A = "${a}"`,
     `MODEL_B = "${b}"`,
     ``,
-    `!modeldelta "$MODEL_A" "$MODEL_B" -o /content/report.json`,
+    `import subprocess, sys`,
+    `subprocess.run([sys.executable, "-m", "modeldelta", MODEL_A, MODEL_B, "-o", "/content/report.json"], check=True)`,
     saveCode
   ].join('\n')));
 
