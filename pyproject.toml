@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-model-diff = "model_diff.cli:main"
+modeldelta = "model_diff.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["model_diff*"]

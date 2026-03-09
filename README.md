@@ -1,10 +1,10 @@
-# model-diff
+# modeldelta
 
 **See what changed inside any model checkpoint.** Weight deltas, SVD structure, spectral analysis, and diagnostic conclusions — in one command.
 
 ```bash
 pip install modeldelta
-model-diff Qwen/Qwen2.5-7B Qwen/Qwen2.5-7B-Instruct -o report.html
+modeldelta Qwen/Qwen2.5-7B Qwen/Qwen2.5-7B-Instruct -o report.html
 ```
 
 ## What it does
@@ -27,7 +27,7 @@ Compares two model checkpoints (base vs instruct, v1 vs v2, merge A vs merge B) 
 ## Example output (terminal)
 
 ```
-model-diff: Qwen/Qwen2.5-7B → Qwen/Qwen2.5-7B-Instruct
+modeldelta: Qwen/Qwen2.5-7B → Qwen/Qwen2.5-7B-Instruct
 Tensors: 283 analyzed, 85 skipped
 Total ||ΔW||: 25.44  |  Mean cos_sim: 0.99996  |  Mean eff_rank: 2166
 
@@ -73,7 +73,7 @@ The diagnostic engine classifies fine-tuning into four profiles based on 7 calib
 ## CLI options
 
 ```
-model-diff MODEL_A MODEL_B [OPTIONS]
+modeldelta MODEL_A MODEL_B [OPTIONS]
 
   MODEL_A, MODEL_B    HuggingFace model IDs or local paths
 
@@ -86,7 +86,7 @@ Options:
 
 ## For AI agents
 
-model-diff produces structured JSON output suitable for programmatic use:
+modeldelta produces structured JSON output suitable for programmatic use:
 
 ```json
 {
@@ -110,7 +110,7 @@ model-diff produces structured JSON output suitable for programmatic use:
 ```
 
 **Use cases for agents:**
-- "How was model X fine-tuned?" → run model-diff, read `diagnostics.summary`
+- "How was model X fine-tuned?" → run modeldelta, read `diagnostics.summary`
 - "Which fine-tune should I pick?" → compare profile_tags across variants
 - "Did this merge break anything?" → check for unusual patterns (EXTREME profile, LayerNorm modified)
 

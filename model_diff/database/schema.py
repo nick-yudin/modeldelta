@@ -1,6 +1,6 @@
-"""HF Dataset schema for model-diff shared results database.
+"""HF Dataset schema for modeldelta shared results database.
 
-Dataset: model-diff-results (HuggingFace Hub)
+Dataset: modeldelta-results (HuggingFace Hub)
 
 Two tables:
   1. `pairs` — one row per model pair comparison (summary-level)

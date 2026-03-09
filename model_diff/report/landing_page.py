@@ -1,4 +1,4 @@
-"""Landing page generator — unified portal for model-diff.
+"""Landing page generator — unified portal for modeldelta.
 
 Generates a single-file HTML page with:
   1. Hero section with tool description
@@ -124,7 +124,7 @@ def generate_landing_page(
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>model-diff — See what changed inside any model</title>
+<title>modeldelta — See what changed inside any model</title>
 <style>
   :root {{
     --bg: #0f172a;
@@ -486,7 +486,7 @@ def generate_landing_page(
 <!-- ═══ HERO ═══ -->
 <div class="hero">
   <h1>
-    <span class="highlight">model-diff</span>
+    <span class="highlight">modeldelta</span>
   </h1>
   <p class="tagline">
     See what changed inside any model checkpoint.<br>
@@ -514,7 +514,7 @@ def generate_landing_page(
 <!-- ═══ PROFILES LEGEND ═══ -->
 <div class="section">
   <h2 class="section-title">Diagnostic profiles</h2>
-  <p class="section-sub">model-diff classifies fine-tuning intensity into four categories.</p>
+  <p class="section-sub">modeldelta classifies fine-tuning intensity into four categories.</p>
   <div class="profiles">
     <div class="profile-card">
       <div class="profile-dot" style="background: var(--green)"></div>
@@ -561,7 +561,7 @@ def generate_landing_page(
       <div class="method-card">
         <h4><span class="method-icon">&#x1F4BB;</span> Local CLI</h4>
         <p>Any model size. Needs ~6.6 GB RAM for 7B. CPU-only, no GPU required.</p>
-        <code id="cli-cmd">model-diff Qwen/Qwen2.5-3B Qwen/Qwen2.5-3B-Instruct -o report.html</code>
+        <code id="cli-cmd">modeldelta Qwen/Qwen2.5-3B Qwen/Qwen2.5-3B-Instruct -o report.html</code>
       </div>
       <div class="method-card">
         <h4><span class="method-icon">&#x2601;</span> Google Colab</h4>
@@ -602,8 +602,8 @@ def generate_landing_page(
 </div>
 
 <footer>
-  <p>model-diff v{__import__('model_diff').__version__} &middot; MIT License &middot;
-  <a href="https://github.com/nick-yudin/model-diff">GitHub</a> &middot;
+  <p>modeldelta v{__import__('model_diff').__version__} &middot; MIT License &middot;
+  <a href="https://github.com/nick-yudin/modeldelta">GitHub</a> &middot;
   <a href="https://pypi.org/project/modeldelta/">PyPI</a></p>
 </footer>
 
@@ -615,7 +615,7 @@ const cliCmd = document.getElementById('cli-cmd');
 function updateCmd() {{
   const a = modelA.value || 'Qwen/Qwen2.5-3B';
   const b = modelB.value || 'Qwen/Qwen2.5-3B-Instruct';
-  cliCmd.textContent = `model-diff ${{a}} ${{b}} -o report.html`;
+  cliCmd.textContent = `modeldelta ${{a}} ${{b}} -o report.html`;
 }}
 modelA.addEventListener('input', updateCmd);
 modelB.addEventListener('input', updateCmd);

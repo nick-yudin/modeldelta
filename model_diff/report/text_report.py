@@ -24,7 +24,7 @@ def generate_text(
     )
 
     lines = [
-        f"model-diff: {model_a} → {model_b}",
+        f"modeldelta: {model_a} → {model_b}",
         f"Tensors: {len(modules)} analyzed, {n_skipped} skipped",
         f"Total ||ΔW||: {total_frob:.2f}  |  Mean cos_sim: {mean_cos:.5f}  |  Mean eff_rank: {mean_eff_rank:.0f}",
         "",

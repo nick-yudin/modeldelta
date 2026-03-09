@@ -1,4 +1,4 @@
-"""CLI entrypoint for model-diff."""
+"""CLI entrypoint for modeldelta."""
 
 import json
 import sys
@@ -26,7 +26,7 @@ def compare(model_a, model_b, output, top_k, top_n, token):
     from model_diff.utils.model_loader import resolve_model, get_tensor_map
     from model_diff.core.weight_diff import compare_models
 
-    click.echo(f"model-diff: {model_a} → {model_b}", err=True)
+    click.echo(f"modeldelta: {model_a} → {model_b}", err=True)
 
     # Resolve and load
     click.echo("Downloading/resolving models...", err=True)
