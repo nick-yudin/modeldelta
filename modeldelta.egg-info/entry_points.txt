@@ -1,0 +1,2 @@
+[console_scripts]
+model-diff = model_diff.cli:main
