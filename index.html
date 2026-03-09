@@ -382,178 +382,10 @@
 <!-- ═══ GALLERY ═══ -->
 <div class="section" id="gallery">
   <h2 class="section-title">Pre-computed comparisons</h2>
-  <p class="section-sub">Click any card to see the diagnostic summary. 7 base&#x2192;instruct pairs analyzed.</p>
+  <p class="section-sub">Click any card to see the diagnostic summary. 0 base&#x2192;instruct pairs analyzed.</p>
 
   <div class="gallery">
     
-        <div class="pair-card" style="border-top: 3px solid #ef4444;"
-             onclick="document.getElementById('detail-0').classList.toggle('hidden')">
-          <div class="pair-header">
-            <span class="tag" style="background:#ef4444">EXTREME</span>
-            <span class="pair-frob" style="color:#ef4444">0.1479</span>
-          </div>
-          <div class="pair-models">
-            <span class="model-name">gemma-2-9b</span>
-            <span class="arrow">&#x2192;</span>
-            <span class="model-name">gemma-2-9b-it</span>
-          </div>
-          <div class="pair-metrics">
-            <span title="Cosine similarity">cos 0.98538</span>
-            <span title="Effective rank">rank 2799</span>
-            <span title="Top-20 concentration">conc 0.046</span>
-          </div>
-          <div id="detail-0" class="pair-detail hidden">
-            <p>google/gemma-2-9b-it was extensively modified with extreme weight changes relative to google/gemma-2-9b. Mean relative change: 0.1479, cosine similarity: 0.98538, total ||ΔW||: 150.62. Changes are full-rank — the entire parameter space was utilized.</p>
-            <a class="btn-report" href="reports/v0_gemma2_9b.html" onclick="event.stopPropagation()">
-              Full report &#x2192;
-            </a>
-          </div>
-        </div>
-        
-        <div class="pair-card" style="border-top: 3px solid #f59e0b;"
-             onclick="document.getElementById('detail-1').classList.toggle('hidden')">
-          <div class="pair-header">
-            <span class="tag" style="background:#f59e0b">HEAVY</span>
-            <span class="pair-frob" style="color:#f59e0b">0.1154</span>
-          </div>
-          <div class="pair-models">
-            <span class="model-name">Llama-3.2-3B</span>
-            <span class="arrow">&#x2192;</span>
-            <span class="model-name">Llama-3.2-3B-Instruct</span>
-          </div>
-          <div class="pair-metrics">
-            <span title="Cosine similarity">cos 0.99273</span>
-            <span title="Effective rank">rank 2076</span>
-            <span title="Top-20 concentration">conc 0.072</span>
-          </div>
-          <div id="detail-1" class="pair-detail hidden">
-            <p>meta-llama/Llama-3.2-3B-Instruct was heavily fine-tuned with significant weight modifications relative to meta-llama/Llama-3.2-3B. Mean relative change: 0.1154, cosine similarity: 0.99273, total ||ΔW||: 165.60. Changes are full-rank — the entire parameter space was utilized.</p>
-            <a class="btn-report" href="reports/v0_llama3.2_3b.html" onclick="event.stopPropagation()">
-              Full report &#x2192;
-            </a>
-          </div>
-        </div>
-        
-        <div class="pair-card" style="border-top: 3px solid #3b82f6;"
-             onclick="document.getElementById('detail-2').classList.toggle('hidden')">
-          <div class="pair-header">
-            <span class="tag" style="background:#3b82f6">STANDARD</span>
-            <span class="pair-frob" style="color:#3b82f6">0.0354</span>
-          </div>
-          <div class="pair-models">
-            <span class="model-name">Llama-3.1-8B</span>
-            <span class="arrow">&#x2192;</span>
-            <span class="model-name">Llama-3.1-8B-Instruct</span>
-          </div>
-          <div class="pair-metrics">
-            <span title="Cosine similarity">cos 0.99978</span>
-            <span title="Effective rank">rank 2579</span>
-            <span title="Top-20 concentration">conc 0.103</span>
-          </div>
-          <div id="detail-2" class="pair-detail hidden">
-            <p>meta-llama/Llama-3.1-8B-Instruct was fine-tuned with standard SFT intensity relative to meta-llama/Llama-3.1-8B. Mean relative change: 0.0354, cosine similarity: 0.99978, total ||ΔW||: 56.67.</p>
-            <a class="btn-report" href="reports/v0_llama3.1_8b.html" onclick="event.stopPropagation()">
-              Full report &#x2192;
-            </a>
-          </div>
-        </div>
-        
-        <div class="pair-card" style="border-top: 3px solid #3b82f6;"
-             onclick="document.getElementById('detail-3').classList.toggle('hidden')">
-          <div class="pair-header">
-            <span class="tag" style="background:#3b82f6">STANDARD</span>
-            <span class="pair-frob" style="color:#3b82f6">0.0157</span>
-          </div>
-          <div class="pair-models">
-            <span class="model-name">Mistral-7B-v0.3</span>
-            <span class="arrow">&#x2192;</span>
-            <span class="model-name">Mistral-7B-Instruct-v0.3</span>
-          </div>
-          <div class="pair-metrics">
-            <span title="Cosine similarity">cos 0.99995</span>
-            <span title="Effective rank">rank 2562</span>
-            <span title="Top-20 concentration">conc 0.140</span>
-          </div>
-          <div id="detail-3" class="pair-detail hidden">
-            <p>mistralai/Mistral-7B-Instruct-v0.3 was fine-tuned with standard SFT intensity relative to mistralai/Mistral-7B-v0.3. Mean relative change: 0.0157, cosine similarity: 0.99995, total ||ΔW||: 5.53.</p>
-            <a class="btn-report" href="reports/v0_mistral_7b_v03.html" onclick="event.stopPropagation()">
-              Full report &#x2192;
-            </a>
-          </div>
-        </div>
-        
-        <div class="pair-card" style="border-top: 3px solid #10b981;"
-             onclick="document.getElementById('detail-4').classList.toggle('hidden')">
-          <div class="pair-header">
-            <span class="tag" style="background:#10b981">SURGICAL</span>
-            <span class="pair-frob" style="color:#10b981">0.0120</span>
-          </div>
-          <div class="pair-models">
-            <span class="model-name">Qwen2.5-7B</span>
-            <span class="arrow">&#x2192;</span>
-            <span class="model-name">Qwen2.5-7B-Instruct</span>
-          </div>
-          <div class="pair-metrics">
-            <span title="Cosine similarity">cos 0.99996</span>
-            <span title="Effective rank">rank 2166</span>
-            <span title="Top-20 concentration">conc 0.141</span>
-          </div>
-          <div id="detail-4" class="pair-detail hidden">
-            <p>Qwen/Qwen2.5-7B-Instruct was surgically fine-tuned with minimal weight changes relative to Qwen/Qwen2.5-7B. Mean relative change: 0.0120, cosine similarity: 0.99996, total ||ΔW||: 25.44.</p>
-            <a class="btn-report" href="reports/v0_qwen2.5_7b.html" onclick="event.stopPropagation()">
-              Full report &#x2192;
-            </a>
-          </div>
-        </div>
-        
-        <div class="pair-card" style="border-top: 3px solid #10b981;"
-             onclick="document.getElementById('detail-5').classList.toggle('hidden')">
-          <div class="pair-header">
-            <span class="tag" style="background:#10b981">SURGICAL</span>
-            <span class="pair-frob" style="color:#10b981">0.0086</span>
-          </div>
-          <div class="pair-models">
-            <span class="model-name">Qwen2.5-3B</span>
-            <span class="arrow">&#x2192;</span>
-            <span class="model-name">Qwen2.5-3B-Instruct</span>
-          </div>
-          <div class="pair-metrics">
-            <span title="Cosine similarity">cos 0.99995</span>
-            <span title="Effective rank">rank 1209</span>
-            <span title="Top-20 concentration">conc 0.214</span>
-          </div>
-          <div id="detail-5" class="pair-detail hidden">
-            <p>Qwen/Qwen2.5-3B-Instruct was surgically fine-tuned with minimal weight changes relative to Qwen/Qwen2.5-3B. Mean relative change: 0.0086, cosine similarity: 0.99995, total ||ΔW||: 19.55. Changes are partially low-rank (LoRA-like structure).</p>
-            <a class="btn-report" href="reports/v0_qwen2.5_3b.html" onclick="event.stopPropagation()">
-              Full report &#x2192;
-            </a>
-          </div>
-        </div>
-        
-        <div class="pair-card" style="border-top: 3px solid #10b981;"
-             onclick="document.getElementById('detail-6').classList.toggle('hidden')">
-          <div class="pair-header">
-            <span class="tag" style="background:#10b981">SURGICAL</span>
-            <span class="pair-frob" style="color:#10b981">0.0081</span>
-          </div>
-          <div class="pair-models">
-            <span class="model-name">Qwen2.5-14B</span>
-            <span class="arrow">&#x2192;</span>
-            <span class="model-name">Qwen2.5-14B-Instruct</span>
-          </div>
-          <div class="pair-metrics">
-            <span title="Cosine similarity">cos 0.99998</span>
-            <span title="Effective rank">rank 3031</span>
-            <span title="Top-20 concentration">conc 0.143</span>
-          </div>
-          <div id="detail-6" class="pair-detail hidden">
-            <p>Qwen/Qwen2.5-14B-Instruct was surgically fine-tuned with minimal weight changes relative to Qwen/Qwen2.5-14B. Mean relative change: 0.0081, cosine similarity: 0.99998, total ||ΔW||: 33.32.</p>
-            <a class="btn-report" href="reports/v0_qwen2.5_14b.html" onclick="event.stopPropagation()">
-              Full report &#x2192;
-            </a>
-          </div>
-        </div>
-        
   </div>
 </div>
 
@@ -680,28 +512,33 @@ function downloadNotebook() {
 
   const cells = [];
 
-  // Header
+  // ── Header ──
   const saveNote = useDrive
-    ? '- Saves JSON report to Google Drive'
-    : '- Downloads JSON report to your computer';
+    ? '> Results are saved to **Google Drive** (`/MyDrive/modeldelta_reports/`).'
+    : '> The full data file `report.json` will be **downloaded to your computer** when the run finishes.';
   cells.push(mdCell([
     `# modeldelta: ${shortA} \u2192 ${shortB}\n`,
     `\n`,
-    `**What this notebook does:**\n`,
-    `- Installs [modeldelta](https://pypi.org/project/modeldelta/) from PyPI\n`,
-    `- Compares weight deltas between \`${a}\` and \`${b}\`\n`,
-    `- Produces a diagnostic profile (surgical / standard / heavy / extreme)\n`,
+    `**What changed inside the model after fine-tuning?** `,
+    `modeldelta compares two HuggingFace checkpoints weight-by-weight \u2014 `,
+    `no GPU needed, no full model loading. It streams tensors one at a time, `,
+    `computes Frobenius norms, cosine similarity, and full SVD of every weight delta, `,
+    `then classifies the fine-tuning as *surgical*, *standard*, *heavy*, or *extreme*.\n`,
+    `\n`,
+    `This notebook compares **\`${a}\`** vs **\`${b}\`**.\n`,
+    `\n`,
     `${saveNote}\n`,
     `\n`,
-    `**Runtime:** CPU is enough. ~18 min for 7B models, ~5 min for 3B.\n`,
-    `\n`,
-    `Generated at [nick-yudin.github.io/modeldelta](https://nick-yudin.github.io/modeldelta/)`
+    `\u23f1 **Runtime:** CPU is enough. ~18 min for 7B, ~5 min for 3B. | `,
+    `[\ud83c\udf10 Gallery](https://nick-yudin.github.io/modeldelta/) | `,
+    `[\ud83d\udce6 PyPI](https://pypi.org/project/modeldelta/) | `,
+    `[\ud83d\udcbb GitHub](https://github.com/nick-yudin/modeldelta)`
   ].join('')));
 
-  // Install
+  // ── Install ──
   cells.push(codeCell('!pip install -q modeldelta>=0.2.0'));
 
-  // Drive mount (optional)
+  // ── Drive mount (optional) ──
   if (useDrive) {
     cells.push(codeCell([
       '# Mount Google Drive for saving results',
@@ -715,33 +552,63 @@ function downloadNotebook() {
     ].join('\n')));
   }
 
-  // Run — use ! magic with {var} interpolation for real-time output
+  // ── Run with subprocess for clean progress ──
   cells.push(codeCell([
+    'import subprocess, sys, time, json',
+    '',
     `MODEL_A = "${a}"`,
     `MODEL_B = "${b}"`,
-    ``,
-    `!modeldelta {MODEL_A} {MODEL_B} -o /content/report.json`
+    'OUTPUT = "/content/report.json"',
+    '',
+    'cmd = [sys.executable, "-m", "modeldelta", MODEL_A, MODEL_B, "-o", OUTPUT, "-q"]',
+    'print(f"\\u25b6 Comparing {MODEL_A} vs {MODEL_B}...")',
+    'print(f"  Output: {OUTPUT}")',
+    'print()',
+    '',
+    't0 = time.time()',
+    'proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,',
+    '                        text=True, bufsize=1)',
+    '',
+    'for line in proc.stdout:',
+    '    line = line.rstrip()',
+    '    if not line:',
+    '        continue',
+    '    # Show only meaningful lines: skip HF download chatter',
+    '    low = line.lower()',
+    '    if any(skip in low for skip in ["downloading", "tokenizer", "config.json",',
+    '           "generation_config", "special_tokens", "model.safetensors.index"]):',
+    '        continue',
+    '    print(line)',
+    '',
+    'proc.wait()',
+    'elapsed = time.time() - t0',
+    'if proc.returncode == 0:',
+    '    print(f"\\n\\u2705 Done in {elapsed/60:.1f} min. Report saved to {OUTPUT}")',
+    'else:',
+    '    print(f"\\n\\u274c Failed (exit code {proc.returncode})")',
+    '    sys.exit(1)'
   ].join('\n')));
 
-  // Save / download
+  // ── Save / download ──
   if (useDrive) {
     cells.push(codeCell([
       '# Copy to Drive',
       'import shutil',
       `shutil.copy("/content/report.json", f"{SAVE_DIR}/${fname}")`,
-      `print(f"Saved to {SAVE_DIR}/${fname}")`
+      `print(f"\\u2705 Saved to {SAVE_DIR}/${fname}")`
     ].join('\n')));
   } else {
     cells.push(codeCell([
-      '# Download report',
+      '# Download the full JSON report to your computer',
       'from google.colab import files',
-      'files.download("/content/report.json")'
+      'files.download("/content/report.json")',
+      'print("\\u2b07\\ufe0f report.json is downloading to your browser Downloads folder.")',
+      'print("   It contains all per-module metrics, SVD data, and diagnostics.")'
     ].join('\n')));
   }
 
-  // Display results — formatted HTML + bar chart
+  // ── Display results: styled HTML report ──
   cells.push(codeCell([
-    '# ── Display results ──',
     'import json',
     'from IPython.display import display, HTML',
     '',
@@ -750,32 +617,78 @@ function downloadNotebook() {
     '',
     'diag = data["diagnostics"]',
     'tag = diag["profile_tag"].upper()',
-    'colors = {"SURGICAL": "#10b981", "STANDARD": "#38bdf8", "HEAVY": "#f59e0b", "EXTREME": "#ef4444"}',
-    'color = colors.get(tag, "#94a3b8")',
+    'tag_colors = {"SURGICAL": "#10b981", "STANDARD": "#38bdf8", "HEAVY": "#f59e0b", "EXTREME": "#ef4444"}',
+    'color = tag_colors.get(tag, "#94a3b8")',
+    'mods = data["modules"]',
+    'svd_mods = [m for m in mods if m.get("has_svd")]',
     '',
-    '# Summary card',
-    'html = f"""',
-    '<div style="background:#1e293b;padding:20px;border-radius:12px;border-top:4px solid {color};',
-    '     font-family:system-ui;color:#e2e8f0;max-width:800px;margin:10px 0">',
-    '  <h2 style="margin:0 0 8px"><span style="background:{color};color:#0f172a;padding:4px 12px;',
-    '       border-radius:6px;font-size:14px;margin-right:8px">{tag}</span>',
-    '       {data["model_a"]} &rarr; {data["model_b"]}</h2>',
-    '  <p style="color:#94a3b8;margin:8px 0">{diag["summary"]}</p>',
-    '  <hr style="border-color:#334155;margin:12px 0">',
-    '"""',
+    'def _mean(vals):',
+    '    return sum(vals) / max(1, len(vals))',
     '',
+    'mean_frob = _mean([m["frob_norm_relative"] for m in mods])',
+    'mean_cos = _mean([min(1.0, m["cosine_sim"]) for m in mods])',
+    'mean_rank = _mean([m["effective_rank"] for m in svd_mods if m.get("effective_rank")]) if svd_mods else 0',
+    'mean_conc = _mean([m["concentration_top_k"] for m in svd_mods if m.get("concentration_top_k")]) if svd_mods else 0',
+    'total_frob = sum(m.get("frob_norm", 0) for m in mods)',
+    '',
+    '# ── Build HTML ──',
+    'html = f\'\'\'',
+    '<div style="font-family:Inter,-apple-system,system-ui,sans-serif;background:#0f172a;',
+    '     color:#e2e8f0;padding:24px;border-radius:12px;max-width:900px">',
+    '',
+    '  <h2 style="font-size:22px;font-weight:800;border-bottom:2px solid {color};',
+    '       padding-bottom:10px;margin:0 0 6px">',
+    '    modeldelta report</h2>',
+    '  <p style="color:#94a3b8;font-size:15px;margin:0 0 20px">',
+    '    <b style="color:#f1f5f9">{data["model_a"]}</b>',
+    '    <span style="color:{color}"> \u2192 </span>',
+    '    <b style="color:#f1f5f9">{data["model_b"]}</b></p>',
+    '',
+    '  <!-- Metric cards -->',
+    '  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px">',
+    '    <div style="background:#1e293b;border-radius:10px;padding:14px;border:1px solid #334155">',
+    '      <div style="font-size:22px;font-weight:800;color:{color}">{len(mods)}</div>',
+    '      <div style="font-size:11px;color:#94a3b8;margin-top:2px">Tensors</div></div>',
+    '    <div style="background:#1e293b;border-radius:10px;padding:14px;border:1px solid #334155">',
+    '      <div style="font-size:22px;font-weight:800;color:{color}">{mean_frob:.4f}</div>',
+    '      <div style="font-size:11px;color:#94a3b8;margin-top:2px">Mean \u0394W/W</div></div>',
+    '    <div style="background:#1e293b;border-radius:10px;padding:14px;border:1px solid #334155">',
+    '      <div style="font-size:22px;font-weight:800;color:{color}">{mean_cos:.5f}</div>',
+    '      <div style="font-size:11px;color:#94a3b8;margin-top:2px">Mean cos sim</div></div>',
+    '    <div style="background:#1e293b;border-radius:10px;padding:14px;border:1px solid #334155">',
+    '      <div style="font-size:22px;font-weight:800;color:{color}">{mean_rank:.0f}</div>',
+    '      <div style="font-size:11px;color:#94a3b8;margin-top:2px">Mean eff. rank</div></div>',
+    '    <div style="background:#1e293b;border-radius:10px;padding:14px;border:1px solid #334155">',
+    '      <div style="font-size:22px;font-weight:800;color:{color}">{mean_conc:.3f}</div>',
+    '      <div style="font-size:11px;color:#94a3b8;margin-top:2px">Top-20 conc.</div></div>',
+    '  </div>',
+    '',
+    '  <!-- Diagnostic summary -->',
+    '  <div style="background:#1e293b;border-radius:10px;padding:18px;border:1px solid #334155;margin-bottom:16px">',
+    '    <span style="display:inline-block;background:{color};color:#0f172a;padding:4px 14px;',
+    '         border-radius:12px;font-size:12px;font-weight:700;letter-spacing:0.05em;',
+    '         margin-bottom:10px">{tag}</span>',
+    '    <p style="font-size:14px;line-height:1.7;color:#cbd5e1;margin:8px 0">{diag["summary"]}</p>',
+    '  </div>',
+    '\'\'\'',
+    '',
+    '# Findings with colored side-bars',
+    'sev_colors = {"critical": "#ef4444", "warning": "#f59e0b", "info": "#38bdf8"}',
     'for f in diag.get("findings", []):',
-    '    icon = "&#9679;" if f["severity"] == "info" else "&#9656;"',
-    '    html += f\'<p style="margin:6px 0"><b>{icon} {f["title"]}</b><br>\'',
-    '    html += f\'<span style="color:#94a3b8;font-size:14px">{f["detail"]}</span></p>\'',
+    '    sc = sev_colors.get(f["severity"], "#38bdf8")',
+    '    html += f\'\'\'',
+    '  <div style="background:rgba({int(sc[1:3],16)},{int(sc[3:5],16)},{int(sc[5:7],16)},0.08);',
+    '       border-left:4px solid {sc};padding:12px 16px;margin:8px 0;border-radius:6px">',
+    '    <b style="color:#f1f5f9">{f["title"]}</b><br>',
+    '    <span style="font-size:13px;color:#94a3b8">{f["detail"]}</span>',
+    '  </div>\'\'\'',
     '',
     'html += "</div>"',
     'display(HTML(html))'
   ].join('\n')));
 
-  // Bar chart of top modules
+  // ── Bar chart of top modules ──
   cells.push(codeCell([
-    '# ── Top changed modules ──',
     'import matplotlib.pyplot as plt',
     '',
     'modules = sorted(data["modules"], key=lambda m: m["frob_norm_relative"], reverse=True)[:15]',
@@ -784,11 +697,11 @@ function downloadNotebook() {
     'values = [m["frob_norm_relative"] for m in modules]',
     '',
     'fig, ax = plt.subplots(figsize=(10, 5))',
-    'bars = ax.barh(range(len(names)), values, color=color, alpha=0.85)',
+    'ax.barh(range(len(names)), values, color=color, alpha=0.85)',
     'ax.set_yticks(range(len(names)))',
     'ax.set_yticklabels(names, fontsize=10)',
     'ax.invert_yaxis()',
-    'ax.set_xlabel("Relative change (||\\u0394W|| / ||W||)", fontsize=12)',
+    'ax.set_xlabel("Relative change (||\u0394W|| / ||W||)", fontsize=12)',
     'ax.set_title(f"Top {len(names)} most changed modules", fontsize=14)',
     'ax.spines["top"].set_visible(False)',
     'ax.spines["right"].set_visible(False)',
@@ -822,6 +735,7 @@ function mdCell(source) {
 function codeCell(source) {
   return { cell_type: "code", metadata: {}, source: [source], outputs: [], execution_count: null };
 }
+
 </script>
 
 </body></html>
