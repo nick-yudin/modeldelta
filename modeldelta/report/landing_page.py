@@ -51,7 +51,7 @@ function downloadNotebook() {
   ].join('')));
 
   // ── Install ──
-  cells.push(codeCell('!pip install -q modeldelta>=0.2.0'));
+  cells.push(codeCell('!pip install -q modeldelta>=0.3.0'));
 
   // ── Drive mount (optional) ──
   if (useDrive) {
@@ -104,21 +104,45 @@ function downloadNotebook() {
     '    sys.exit(1)'
   ].join('\n')));
 
+  // ── Generate HTML report from JSON (no re-download) ──
+  const htmlFname = fname.replace('.json', '.html');
+  cells.push(codeCell([
+    '# Generate full HTML report from JSON data (no model re-download)',
+    'from modeldelta.report.html_report import generate_html',
+    '',
+    'with open("/content/report.json") as f:',
+    '    report_data = json.load(f)',
+    '',
+    'html_report = generate_html(',
+    '    report_data["modules"], report_data["model_a"], report_data["model_b"],',
+    '    top_k=20,',
+    ')',
+    '',
+    'with open("/content/report.html", "w") as f:',
+    '    f.write(html_report)',
+    'print(f"\\u2705 HTML report generated: /content/report.html ({len(html_report)//1024} KB)")'
+  ].join('\n')));
+
   // ── Save / download ──
   if (useDrive) {
     cells.push(codeCell([
-      '# Copy to Drive',
+      '# Copy JSON + HTML to Drive',
       'import shutil',
       `shutil.copy("/content/report.json", f"{SAVE_DIR}/${fname}")`,
-      `print(f"\\u2705 Saved to {SAVE_DIR}/${fname}")`
+      `shutil.copy("/content/report.html", f"{SAVE_DIR}/${htmlFname}")`,
+      `print(f"\\u2705 Saved to {SAVE_DIR}/:")`,
+      `print(f"   ${fname}  (full data)")`,
+      `print(f"   ${htmlFname}  (interactive report)")`
     ].join('\n')));
   } else {
     cells.push(codeCell([
-      '# Download the full JSON report to your computer',
+      '# Download JSON + HTML reports to your computer',
       'from google.colab import files',
       'files.download("/content/report.json")',
-      'print("\\u2b07\\ufe0f report.json is downloading to your browser Downloads folder.")',
-      'print("   It contains all per-module metrics, SVD data, and diagnostics.")'
+      'files.download("/content/report.html")',
+      'print("\\u2b07\\ufe0f Downloading to your browser Downloads folder:")',
+      'print("   report.json  \u2014 full data (all per-module metrics, SVD, diagnostics)")',
+      'print("   report.html  \u2014 interactive visual report (open in browser)")'
     ].join('\n')));
   }
 
