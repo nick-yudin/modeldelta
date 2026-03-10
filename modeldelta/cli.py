@@ -25,6 +25,7 @@ def compare(model_a, model_b, output, top_k, top_n, token, quiet):
     MODEL_A and MODEL_B can be HuggingFace model IDs or local paths.
     """
     from modeldelta.utils.model_loader import resolve_model, get_tensor_map
+    from modeldelta.utils.model_meta import validate_pair
     from modeldelta.core.weight_diff import compare_models
 
     # Auto-detect non-TTY (notebooks, pipes) — suppress HF progress bars
@@ -32,6 +33,25 @@ def compare(model_a, model_b, output, top_k, top_n, token, quiet):
         quiet = not sys.stderr.isatty()
 
     click.echo(f"modeldelta: {model_a} → {model_b}", err=True)
+
+    # Pre-flight validation (fast, no download)
+    click.echo("Validating models...", err=True)
+    meta_a, meta_b, warnings = validate_pair(model_a, model_b, token=token)
+    if not meta_a.exists:
+        click.echo(f"Error: model not found — {model_a}", err=True)
+        if meta_a.error:
+            click.echo(f"  {meta_a.error}", err=True)
+        sys.exit(1)
+    if not meta_b.exists:
+        click.echo(f"Error: model not found — {model_b}", err=True)
+        if meta_b.error:
+            click.echo(f"  {meta_b.error}", err=True)
+        sys.exit(1)
+    for w in warnings:
+        click.echo(f"Warning: {w}", err=True)
+
+    click.echo(f"  A: {meta_a.one_liner()}", err=True)
+    click.echo(f"  B: {meta_b.one_liner()}", err=True)
 
     # Resolve and load
     click.echo("Downloading/resolving models...", err=True)
@@ -60,12 +80,14 @@ def compare(model_a, model_b, output, top_k, top_n, token, quiet):
     elif output.endswith(".json"):
         from modeldelta.report.json_report import generate_json
         with open(output, "w") as f:
-            f.write(generate_json(results, model_a, model_b, n_skipped))
+            f.write(generate_json(results, model_a, model_b, n_skipped,
+                                  meta_a=meta_a, meta_b=meta_b))
         click.echo(f"JSON report saved to {output}", err=True)
 
     elif output.endswith(".html"):
         from modeldelta.report.html_report import generate_html
-        html = generate_html(results, model_a, model_b, top_k=top_k)
+        html = generate_html(results, model_a, model_b, top_k=top_k,
+                             meta_a=meta_a, meta_b=meta_b)
         with open(output, "w") as f:
             f.write(html)
         click.echo(f"HTML report saved to {output}", err=True)

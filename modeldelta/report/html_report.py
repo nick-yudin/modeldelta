@@ -92,6 +92,48 @@ def _build_matrices(modules: list[dict]):
     return frob, cos, rank, conc, module_types, n_layers, layer_modules
 
 
+def _model_info_html(meta_a, meta_b) -> str:
+    """Generate model info cards HTML."""
+    if meta_a is None and meta_b is None:
+        return ""
+
+    def _card(label, meta):
+        if meta is None:
+            return ""
+        parts = []
+        if meta.base_model:
+            parts.append(f"<span>base: <b>{meta.base_model}</b></span>")
+        if meta.pipeline_tag:
+            parts.append(f"<span>{meta.pipeline_tag}</span>")
+        if meta.license:
+            parts.append(f"<span>{meta.license}</span>")
+        if meta.downloads:
+            from modeldelta.utils.model_meta import _fmt_count
+            parts.append(f"<span>{_fmt_count(meta.downloads)} downloads</span>")
+        if meta.tags:
+            skip = {"safetensors", "transformers", "conversational",
+                    "endpoints_compatible", "region:us",
+                    meta.pipeline_tag or "", meta.library or ""}
+            interesting = [t for t in meta.tags if t not in skip
+                           and not t.startswith("license:")
+                           and not t.startswith("base_model:")
+                           and not t.startswith("arxiv:")][:4]
+            if interesting:
+                parts.append(f"<span>{', '.join(interesting)}</span>")
+        if not parts:
+            return ""
+        inner = " &middot; ".join(p for p in parts)
+        return (f'<div style="font-size:12px;color:var(--text2);margin:4px 0">'
+                f'<b style="color:var(--text);font-size:11px;text-transform:uppercase;'
+                f'letter-spacing:0.05em">{label}:</b> {inner}</div>')
+
+    html = _card("Model A", meta_a) + _card("Model B", meta_b)
+    if html:
+        html = (f'<div style="background:var(--bg2);border:1px solid var(--bg3);'
+                f'border-radius:8px;padding:12px 16px;margin-bottom:20px">{html}</div>')
+    return html
+
+
 def generate_html(
     modules: list[dict],
     model_a: str,
@@ -100,6 +142,8 @@ def generate_html(
     sparsity_threshold: float = 1e-5,
     include_diagnostics: bool = True,
     back_link: str = "",
+    meta_a=None,
+    meta_b=None,
 ) -> str:
     """Generate complete HTML report as string."""
     _apply_dark_style()
@@ -275,6 +319,7 @@ def generate_html(
 <p class='subtitle'><strong style="color:var(--text)">{model_a}</strong>
   <span style="color:var(--accent)">&#x2192;</span>
   <strong style="color:var(--text)">{model_b}</strong></p>
+{_model_info_html(meta_a, meta_b)}
 <div class='summary'>
   <div class='card'><div class='value'>{len(modules)}</div><div class='label'>Tensors analyzed</div></div>
   <div class='card'><div class='value'>{total_frob:.2f}</div><div class='label'>Total ||&#x394;W||</div></div>

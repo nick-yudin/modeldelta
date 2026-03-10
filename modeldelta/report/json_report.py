@@ -12,6 +12,8 @@ def generate_json(
     model_b: str,
     n_skipped: int = 0,
     include_diagnostics: bool = True,
+    meta_a=None,
+    meta_b=None,
 ) -> str:
     """Generate JSON report as string."""
     data = {
@@ -19,8 +21,17 @@ def generate_json(
         "model_b": model_b,
         "n_tensors": len(modules),
         "n_skipped": n_skipped,
-        "modules": modules,
     }
+
+    # Model metadata (if available)
+    if meta_a is not None or meta_b is not None:
+        data["model_info"] = {}
+        if meta_a is not None:
+            data["model_info"]["model_a"] = meta_a.to_dict()
+        if meta_b is not None:
+            data["model_info"]["model_b"] = meta_b.to_dict()
+
+    data["modules"] = modules
 
     if include_diagnostics:
         from modeldelta.report.diagnostics import diagnose

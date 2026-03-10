@@ -13,6 +13,246 @@ import json
 from dataclasses import dataclass
 
 
+# JS notebook generator — kept outside the f-string to avoid triple-quote conflicts.
+# Uses r'''...''' since the JS code contains """ but not '''.
+_NOTEBOOK_JS = r'''
+// ── Notebook generator ──
+function downloadNotebook() {
+  const a = modelA.value.trim() || 'Qwen/Qwen2.5-3B';
+  const b = modelB.value.trim() || 'Qwen/Qwen2.5-3B-Instruct';
+  const shortA = a.split('/').pop();
+  const shortB = b.split('/').pop();
+  const useDrive = document.getElementById('drive-opt').checked;
+  const fname = `${shortA}_vs_${shortB}.json`.replace(/\//g, '_');
+
+  const cells = [];
+
+  // ── Header ──
+  const saveNote = useDrive
+    ? '> Results are saved to **Google Drive** (`/MyDrive/modeldelta_reports/`).'
+    : '> The full data file `report.json` will be **downloaded to your computer** when the run finishes.';
+  cells.push(mdCell([
+    `# modeldelta: ${shortA} \u2192 ${shortB}\n`,
+    `\n`,
+    `**What changed inside the model after fine-tuning?** `,
+    `modeldelta compares two HuggingFace checkpoints weight-by-weight \u2014 `,
+    `no GPU needed, no full model loading. It streams tensors one at a time, `,
+    `computes Frobenius norms, cosine similarity, and full SVD of every weight delta, `,
+    `then classifies the fine-tuning as *surgical*, *standard*, *heavy*, or *extreme*.\n`,
+    `\n`,
+    `This notebook compares **\`${a}\`** vs **\`${b}\`**.\n`,
+    `\n`,
+    `${saveNote}\n`,
+    `\n`,
+    `\u23f1 **Runtime:** CPU is enough. ~18 min for 7B, ~5 min for 3B. | `,
+    `[\ud83c\udf10 Gallery](https://nick-yudin.github.io/modeldelta/) | `,
+    `[\ud83d\udce6 PyPI](https://pypi.org/project/modeldelta/) | `,
+    `[\ud83d\udcbb GitHub](https://github.com/nick-yudin/modeldelta)`
+  ].join('')));
+
+  // ── Install ──
+  cells.push(codeCell('!pip install -q modeldelta>=0.2.0'));
+
+  // ── Drive mount (optional) ──
+  if (useDrive) {
+    cells.push(codeCell([
+      '# Mount Google Drive for saving results',
+      'from google.colab import drive',
+      'drive.mount("/content/drive")',
+      '',
+      'import os',
+      'SAVE_DIR = "/content/drive/MyDrive/modeldelta_reports"',
+      'os.makedirs(SAVE_DIR, exist_ok=True)',
+      'print(f"Reports will be saved to {SAVE_DIR}")'
+    ].join('\n')));
+  }
+
+  // ── Run with subprocess for clean progress ──
+  cells.push(codeCell([
+    'import subprocess, sys, time, json',
+    '',
+    `MODEL_A = "${a}"`,
+    `MODEL_B = "${b}"`,
+    'OUTPUT = "/content/report.json"',
+    '',
+    'cmd = [sys.executable, "-m", "modeldelta", MODEL_A, MODEL_B, "-o", OUTPUT, "-q"]',
+    'print(f"\\u25b6 Comparing {MODEL_A} vs {MODEL_B}...")',
+    'print(f"  Output: {OUTPUT}")',
+    'print()',
+    '',
+    't0 = time.time()',
+    'proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,',
+    '                        text=True, bufsize=1)',
+    '',
+    'for line in proc.stdout:',
+    '    line = line.rstrip()',
+    '    if not line:',
+    '        continue',
+    '    # Show only meaningful lines: skip HF download chatter',
+    '    low = line.lower()',
+    '    if any(skip in low for skip in ["downloading", "tokenizer", "config.json",',
+    '           "generation_config", "special_tokens", "model.safetensors.index"]):',
+    '        continue',
+    '    print(line)',
+    '',
+    'proc.wait()',
+    'elapsed = time.time() - t0',
+    'if proc.returncode == 0:',
+    '    print(f"\\n\\u2705 Done in {elapsed/60:.1f} min. Report saved to {OUTPUT}")',
+    'else:',
+    '    print(f"\\n\\u274c Failed (exit code {proc.returncode})")',
+    '    sys.exit(1)'
+  ].join('\n')));
+
+  // ── Save / download ──
+  if (useDrive) {
+    cells.push(codeCell([
+      '# Copy to Drive',
+      'import shutil',
+      `shutil.copy("/content/report.json", f"{SAVE_DIR}/${fname}")`,
+      `print(f"\\u2705 Saved to {SAVE_DIR}/${fname}")`
+    ].join('\n')));
+  } else {
+    cells.push(codeCell([
+      '# Download the full JSON report to your computer',
+      'from google.colab import files',
+      'files.download("/content/report.json")',
+      'print("\\u2b07\\ufe0f report.json is downloading to your browser Downloads folder.")',
+      'print("   It contains all per-module metrics, SVD data, and diagnostics.")'
+    ].join('\n')));
+  }
+
+  // ── Display results: styled HTML report ──
+  cells.push(codeCell([
+    'import json',
+    'from IPython.display import display, HTML',
+    '',
+    'with open("/content/report.json") as f:',
+    '    data = json.load(f)',
+    '',
+    'diag = data["diagnostics"]',
+    'tag = diag["profile_tag"].upper()',
+    'tag_colors = {"SURGICAL": "#10b981", "STANDARD": "#38bdf8", "HEAVY": "#f59e0b", "EXTREME": "#ef4444"}',
+    'color = tag_colors.get(tag, "#94a3b8")',
+    'mods = data["modules"]',
+    'svd_mods = [m for m in mods if m.get("has_svd")]',
+    '',
+    'def _mean(vals):',
+    '    return sum(vals) / max(1, len(vals))',
+    '',
+    'mean_frob = _mean([m["frob_norm_relative"] for m in mods])',
+    'mean_cos = _mean([min(1.0, m["cosine_sim"]) for m in mods])',
+    'mean_rank = _mean([m["effective_rank"] for m in svd_mods if m.get("effective_rank")]) if svd_mods else 0',
+    'mean_conc = _mean([m["concentration_top_k"] for m in svd_mods if m.get("concentration_top_k")]) if svd_mods else 0',
+    'total_frob = sum(m.get("frob_norm", 0) for m in mods)',
+    '',
+    '# ── Build HTML ──',
+    'html = f\'\'\'',
+    '<div style="font-family:Inter,-apple-system,system-ui,sans-serif;background:#0f172a;',
+    '     color:#e2e8f0;padding:24px;border-radius:12px;max-width:900px">',
+    '',
+    '  <h2 style="font-size:22px;font-weight:800;border-bottom:2px solid {color};',
+    '       padding-bottom:10px;margin:0 0 6px">',
+    '    modeldelta report</h2>',
+    '  <p style="color:#94a3b8;font-size:15px;margin:0 0 20px">',
+    '    <b style="color:#f1f5f9">{data["model_a"]}</b>',
+    '    <span style="color:{color}"> \u2192 </span>',
+    '    <b style="color:#f1f5f9">{data["model_b"]}</b></p>',
+    '',
+    '  <!-- Metric cards -->',
+    '  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px">',
+    '    <div style="background:#1e293b;border-radius:10px;padding:14px;border:1px solid #334155">',
+    '      <div style="font-size:22px;font-weight:800;color:{color}">{len(mods)}</div>',
+    '      <div style="font-size:11px;color:#94a3b8;margin-top:2px">Tensors</div></div>',
+    '    <div style="background:#1e293b;border-radius:10px;padding:14px;border:1px solid #334155">',
+    '      <div style="font-size:22px;font-weight:800;color:{color}">{mean_frob:.4f}</div>',
+    '      <div style="font-size:11px;color:#94a3b8;margin-top:2px">Mean \u0394W/W</div></div>',
+    '    <div style="background:#1e293b;border-radius:10px;padding:14px;border:1px solid #334155">',
+    '      <div style="font-size:22px;font-weight:800;color:{color}">{mean_cos:.5f}</div>',
+    '      <div style="font-size:11px;color:#94a3b8;margin-top:2px">Mean cos sim</div></div>',
+    '    <div style="background:#1e293b;border-radius:10px;padding:14px;border:1px solid #334155">',
+    '      <div style="font-size:22px;font-weight:800;color:{color}">{mean_rank:.0f}</div>',
+    '      <div style="font-size:11px;color:#94a3b8;margin-top:2px">Mean eff. rank</div></div>',
+    '    <div style="background:#1e293b;border-radius:10px;padding:14px;border:1px solid #334155">',
+    '      <div style="font-size:22px;font-weight:800;color:{color}">{mean_conc:.3f}</div>',
+    '      <div style="font-size:11px;color:#94a3b8;margin-top:2px">Top-20 conc.</div></div>',
+    '  </div>',
+    '',
+    '  <!-- Diagnostic summary -->',
+    '  <div style="background:#1e293b;border-radius:10px;padding:18px;border:1px solid #334155;margin-bottom:16px">',
+    '    <span style="display:inline-block;background:{color};color:#0f172a;padding:4px 14px;',
+    '         border-radius:12px;font-size:12px;font-weight:700;letter-spacing:0.05em;',
+    '         margin-bottom:10px">{tag}</span>',
+    '    <p style="font-size:14px;line-height:1.7;color:#cbd5e1;margin:8px 0">{diag["summary"]}</p>',
+    '  </div>',
+    '\'\'\'',
+    '',
+    '# Findings with colored side-bars',
+    'sev_colors = {"critical": "#ef4444", "warning": "#f59e0b", "info": "#38bdf8"}',
+    'for f in diag.get("findings", []):',
+    '    sc = sev_colors.get(f["severity"], "#38bdf8")',
+    '    html += f\'\'\'',
+    '  <div style="background:rgba({int(sc[1:3],16)},{int(sc[3:5],16)},{int(sc[5:7],16)},0.08);',
+    '       border-left:4px solid {sc};padding:12px 16px;margin:8px 0;border-radius:6px">',
+    '    <b style="color:#f1f5f9">{f["title"]}</b><br>',
+    '    <span style="font-size:13px;color:#94a3b8">{f["detail"]}</span>',
+    '  </div>\'\'\'',
+    '',
+    'html += "</div>"',
+    'display(HTML(html))'
+  ].join('\n')));
+
+  // ── Bar chart of top modules ──
+  cells.push(codeCell([
+    'import matplotlib.pyplot as plt',
+    '',
+    'modules = sorted(data["modules"], key=lambda m: m["frob_norm_relative"], reverse=True)[:15]',
+    'names = [m["name"].split(".")[-2] + "." + m["name"].split(".")[-1]',
+    '         if "." in m["name"] else m["name"] for m in modules]',
+    'values = [m["frob_norm_relative"] for m in modules]',
+    '',
+    'fig, ax = plt.subplots(figsize=(10, 5))',
+    'ax.barh(range(len(names)), values, color=color, alpha=0.85)',
+    'ax.set_yticks(range(len(names)))',
+    'ax.set_yticklabels(names, fontsize=10)',
+    'ax.invert_yaxis()',
+    'ax.set_xlabel("Relative change (||\u0394W|| / ||W||)", fontsize=12)',
+    'ax.set_title(f"Top {len(names)} most changed modules", fontsize=14)',
+    'ax.spines["top"].set_visible(False)',
+    'ax.spines["right"].set_visible(False)',
+    'plt.tight_layout()',
+    'plt.show()'
+  ].join('\n')));
+
+  const nb = {
+    nbformat: 4,
+    nbformat_minor: 5,
+    metadata: {
+      kernelspec: { display_name: "Python 3", language: "python", name: "python3" },
+      language_info: { name: "python", version: "3.10.0" },
+      colab: { provenance: [] }
+    },
+    cells: cells
+  };
+
+  const blob = new Blob([JSON.stringify(nb, null, 1)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `modeldelta_${shortA}_vs_${shortB}.ipynb`.replace(/\//g, '_');
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function mdCell(source) {
+  return { cell_type: "markdown", metadata: {}, source: [source] };
+}
+function codeCell(source) {
+  return { cell_type: "code", metadata: {}, source: [source], outputs: [], execution_count: null };
+}
+'''
+
+
 @dataclass
 class PairCard:
     """Summary card for a pre-computed pair."""
@@ -566,7 +806,10 @@ def generate_landing_page(
       <div class="method-card">
         <h4><span class="method-icon">&#x2601;</span> Google Colab</h4>
         <p>For models &gt;3B. Free CPU runtime. ~18 min per 7B pair.</p>
-        <code>Coming soon &mdash; notebook generator</code>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:13px;color:var(--text2);cursor:pointer;">
+          <input type="checkbox" id="drive-opt" style="accent-color:var(--accent);"> Save to Google Drive
+        </label>
+        <button class="btn btn-primary" style="margin-top:8px;font-size:14px;" onclick="downloadNotebook()">Download notebook</button>
       </div>
       <div class="method-card">
         <h4><span class="method-icon">&#x26A1;</span> Online (&#x2264;3B)</h4>
@@ -619,6 +862,7 @@ function updateCmd() {{
 }}
 modelA.addEventListener('input', updateCmd);
 modelB.addEventListener('input', updateCmd);
+{_NOTEBOOK_JS}
 </script>
 
 </body></html>"""
