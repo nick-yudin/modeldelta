@@ -382,7 +382,7 @@
 <!-- ═══ GALLERY ═══ -->
 <div class="section" id="gallery">
   <h2 class="section-title">Pre-computed comparisons</h2>
-  <p class="section-sub" id="gallery-sub">Click any card to see the diagnostic summary. 8 base&#x2192;instruct pairs analyzed.</p>
+  <p class="section-sub" id="gallery-sub">Click any card to see the diagnostic summary. 7 base&#x2192;instruct pairs analyzed.</p>
 
   <div class="gallery" id="gallery-grid">
     
@@ -406,31 +406,6 @@
           <div id="detail-0" class="pair-detail hidden">
             <p>Extreme delta. Gemma-2-9B-IT departs substantially from its base.</p>
             <a class="btn-report" href="reports/v0_gemma2_9b.html" onclick="event.stopPropagation()">
-              Full report &#x2192;
-            </a>
-          </div>
-        </div>
-        
-        <div class="pair-card" style="border-top: 3px solid #ef4444;"
-             data-pair="Qwen/Qwen3.5-27B-A3B|NikolayYudin/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled"
-             onclick="document.getElementById('detail-1').classList.toggle('hidden')">
-          <div class="pair-header">
-            <span class="tag" style="background:#ef4444">EXTREME</span>
-            <span class="pair-frob" style="color:#ef4444">0.0628</span>
-          </div>
-          <div class="pair-models">
-            <span class="model-name">Qwen3.5-27B-A3B</span>
-            <span class="arrow">&#x2192;</span>
-            <span class="model-name">Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled</span>
-          </div>
-          <div class="pair-metrics">
-            <span title="Cosine similarity">cos 0.99734</span>
-            <span title="Effective rank">rank 10</span>
-            <span title="Top-20 concentration">conc 0.589</span>
-          </div>
-          <div id="detail-1" class="pair-detail hidden">
-            <p>Extreme delta despite low effective rank — concentrated heavy changes.</p>
-            <a class="btn-report" href="reports/v0_qwen35_27b_distilled.html" onclick="event.stopPropagation()">
               Full report &#x2192;
             </a>
           </div>
@@ -704,7 +679,7 @@ function updateCmd() {
 modelA.addEventListener('input', updateCmd);
 modelB.addEventListener('input', updateCmd);
 
-// ── Notebook generator ──
+// ��─ Notebook generator ──
 function downloadNotebook() {
   const a = modelA.value.trim() || 'Qwen/Qwen2.5-3B';
   const b = modelB.value.trim() || 'Qwen/Qwen2.5-3B-Instruct';
