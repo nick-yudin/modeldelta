@@ -1,6 +1,6 @@
 """Push/pull results to HuggingFace Dataset repo.
 
-Repo: nick-yudin/modeldelta-results
+Repo: NikolayYudin/modeldelta-results
 Structure:
   index.json          — gallery index (list of pair summaries)
   pairs/{pair_id}.json — full results per pair
@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict
 
-REPO_ID = "nick-yudin/modeldelta-results"
+REPO_ID = "NikolayYudin/modeldelta-results"
 
 
 def push_results(

@@ -891,8 +891,8 @@ modelB.addEventListener('input', updateCmd);
 
 // ── Dynamic gallery: fetch shared results from HF ──
 (async function loadSharedResults() {{
-  const HF_INDEX = 'https://huggingface.co/datasets/nick-yudin/modeldelta-results/raw/main/index.json';
-  const HF_PAIR  = 'https://huggingface.co/datasets/nick-yudin/modeldelta-results/raw/main/pairs/';
+  const HF_INDEX = 'https://huggingface.co/datasets/NikolayYudin/modeldelta-results/raw/main/index.json';
+  const HF_PAIR  = 'https://huggingface.co/datasets/NikolayYudin/modeldelta-results/raw/main/pairs/';
   const grid = document.getElementById('gallery-grid');
   const sub = document.getElementById('gallery-sub');
   const tagColors = {{surgical:'#10b981', standard:'#3b82f6', heavy:'#f59e0b', extreme:'#ef4444'}};

@@ -108,7 +108,7 @@ def compare(model_a, model_b, output, top_k, top_n, token, quiet, share):
                 token=token, top_k=top_k,
             )
             click.echo(
-                f"Shared! View at https://huggingface.co/datasets/nick-yudin/modeldelta-results",
+                f"Shared! View at https://huggingface.co/datasets/NikolayYudin/modeldelta-results",
                 err=True,
             )
         except Exception as e:
