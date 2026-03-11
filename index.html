@@ -997,12 +997,15 @@ function _makeCard(p) {
   var shortA = (p.model_a || '').split('/').pop();
   var shortB = (p.model_b || '').split('/').pop();
   var uid    = 'gd-' + Math.random().toString(36).slice(2, 9);
+  var reportLink = p.report_url
+    ? '<a class="btn-report" href="' + p.report_url + '" ' +
+      'onclick="event.stopPropagation()" target="_blank">Full report &#x2192;</a>'
+    : '';
   var isHash = /^[0-9a-f]{15,16}$/.test(p.pair_id || '');
-
-  var dataLink = isHash
+  var dataLink = reportLink || (isHash
     ? '<a class="btn-report" href="' + _HF_PAIR + p.pair_id + '.json" ' +
       'onclick="event.stopPropagation()" target="_blank">Full data (JSON) &#x2192;</a>'
-    : '';
+    : '');
 
   var card = document.createElement('div');
   card.className = 'pair-card';
