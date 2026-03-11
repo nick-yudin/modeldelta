@@ -851,7 +851,7 @@ def generate_landing_page(
           <input type="checkbox" id="drive-opt" style="accent-color:var(--accent);"> Save to Google Drive
         </label>
         <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;color:var(--text2);cursor:pointer;">
-          <input type="checkbox" id="share-opt" style="accent-color:var(--accent);"> Share to community gallery
+          <input type="checkbox" id="share-opt" checked style="accent-color:var(--accent);"> Share to community gallery
         </label>
         <button class="btn btn-primary" style="margin-top:8px;font-size:14px;" onclick="downloadNotebook()">Download notebook</button>
       </div>
