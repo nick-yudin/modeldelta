@@ -52,7 +52,7 @@ function downloadNotebook() {
   ].join('')));
 
   // ── Install ──
-  cells.push(codeCell('!pip install -q modeldelta>=0.3.0'));
+  cells.push(codeCell('!pip install -q modeldelta>=0.4.0'));
 
   // ── Drive mount (optional) ──
   if (useDrive) {
