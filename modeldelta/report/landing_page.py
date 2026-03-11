@@ -23,6 +23,7 @@ function downloadNotebook() {
   const shortA = a.split('/').pop();
   const shortB = b.split('/').pop();
   const useDrive = document.getElementById('drive-opt').checked;
+  const useShare = document.getElementById('share-opt').checked;
   const fname = `${shortA}_vs_${shortB}.json`.replace(/\//g, '_');
 
   const cells = [];
@@ -67,7 +68,22 @@ function downloadNotebook() {
     ].join('\n')));
   }
 
+  // ── HF login (for --share) ──
+  if (useShare) {
+    cells.push(mdCell([
+      '### HuggingFace login\n',
+      'Required to share results to the community gallery. ',
+      'You can create a token at [hf.co/settings/tokens](https://huggingface.co/settings/tokens) (write access).'
+    ].join('')));
+    cells.push(codeCell([
+      '# Login to HuggingFace (needed for --share)',
+      'from huggingface_hub import login',
+      'login()'
+    ].join('\n')));
+  }
+
   // ── Run with subprocess for clean progress ──
+  const shareFlag = useShare ? ', "--share"' : '';
   cells.push(codeCell([
     'import subprocess, sys, time, json',
     '',
@@ -75,7 +91,7 @@ function downloadNotebook() {
     `MODEL_B = "${b}"`,
     'OUTPUT = "/content/report.json"',
     '',
-    'cmd = [sys.executable, "-m", "modeldelta", MODEL_A, MODEL_B, "-o", OUTPUT, "-q"]',
+    `cmd = [sys.executable, "-m", "modeldelta", MODEL_A, MODEL_B, "-o", OUTPUT, "-q"${shareFlag}]`,
     'print(f"\\u25b6 Comparing {MODEL_A} vs {MODEL_B}...")',
     'print(f"  Output: {OUTPUT}")',
     'print()',
@@ -833,6 +849,9 @@ def generate_landing_page(
         <p>For models &gt;3B. Free CPU runtime. ~18 min per 7B pair.</p>
         <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:13px;color:var(--text2);cursor:pointer;">
           <input type="checkbox" id="drive-opt" style="accent-color:var(--accent);"> Save to Google Drive
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;color:var(--text2);cursor:pointer;">
+          <input type="checkbox" id="share-opt" style="accent-color:var(--accent);"> Share to community gallery
         </label>
         <button class="btn btn-primary" style="margin-top:8px;font-size:14px;" onclick="downloadNotebook()">Download notebook</button>
       </div>
