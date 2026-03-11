@@ -19,7 +19,8 @@ def _progress(current, total, elapsed, name):
 @click.option("--top-n", default=20, help="Number of modules to show in text output")
 @click.option("--token", default=None, help="HuggingFace token (or set HF_TOKEN env var)")
 @click.option("--quiet", "-q", is_flag=True, default=None, help="Suppress download progress bars (auto-enabled in notebooks)")
-def compare(model_a, model_b, output, top_k, top_n, token, quiet):
+@click.option("--share", is_flag=True, default=False, help="Share results to modeldelta gallery on HuggingFace")
+def compare(model_a, model_b, output, top_k, top_n, token, quiet, share):
     """Compare two model checkpoints and report weight deltas.
 
     MODEL_A and MODEL_B can be HuggingFace model IDs or local paths.
@@ -95,6 +96,23 @@ def compare(model_a, model_b, output, top_k, top_n, token, quiet):
     else:
         click.echo(f"Unknown output format: {output}. Use .json or .html", err=True)
         sys.exit(1)
+
+    # Share to HF gallery
+    if share:
+        click.echo("Sharing to modeldelta gallery...", err=True)
+        try:
+            from modeldelta.database.hub import push_results
+            pair_id = push_results(
+                results, model_a, model_b, n_skipped,
+                meta_a=meta_a, meta_b=meta_b,
+                token=token, top_k=top_k,
+            )
+            click.echo(
+                f"Shared! View at https://huggingface.co/datasets/nick-yudin/modeldelta-results",
+                err=True,
+            )
+        except Exception as e:
+            click.echo(f"Warning: share failed — {e}", err=True)
 
 
 def main():

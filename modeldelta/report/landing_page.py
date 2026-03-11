@@ -360,6 +360,7 @@ def generate_landing_page(
 
         gallery_cards += f"""
         <div class="pair-card" style="border-top: 3px solid {accent};"
+             data-pair="{p.model_a}|{p.model_b}"
              onclick="document.getElementById('detail-{i}').classList.toggle('hidden')">
           <div class="pair-header">
             <span class="tag" style="background:{accent}">{p.profile_tag.upper()}</span>
@@ -768,9 +769,9 @@ def generate_landing_page(
 <!-- ═══ GALLERY ═══ -->
 <div class="section" id="gallery">
   <h2 class="section-title">Pre-computed comparisons</h2>
-  <p class="section-sub">Click any card to see the diagnostic summary. {len(pairs)} base&#x2192;instruct pairs analyzed.</p>
+  <p class="section-sub" id="gallery-sub">Click any card to see the diagnostic summary. {len(pairs)} base&#x2192;instruct pairs analyzed.</p>
 
-  <div class="gallery">
+  <div class="gallery" id="gallery-grid">
     {gallery_cards}
   </div>
 </div>
@@ -887,6 +888,78 @@ function updateCmd() {{
 modelA.addEventListener('input', updateCmd);
 modelB.addEventListener('input', updateCmd);
 {_NOTEBOOK_JS}
+
+// ── Dynamic gallery: fetch shared results from HF ──
+(async function loadSharedResults() {{
+  const HF_INDEX = 'https://huggingface.co/datasets/nick-yudin/modeldelta-results/raw/main/index.json';
+  const HF_PAIR  = 'https://huggingface.co/datasets/nick-yudin/modeldelta-results/raw/main/pairs/';
+  const grid = document.getElementById('gallery-grid');
+  const sub = document.getElementById('gallery-sub');
+  const tagColors = {{surgical:'#10b981', standard:'#3b82f6', heavy:'#f59e0b', extreme:'#ef4444'}};
+
+  // Collect existing pair IDs (from static cards) to avoid duplicates
+  const existing = new Set();
+  grid.querySelectorAll('[data-pair]').forEach(el => existing.add(el.dataset.pair));
+
+  try {{
+    const resp = await fetch(HF_INDEX);
+    if (!resp.ok) return;
+    const index = await resp.json();
+
+    let added = 0;
+    for (const e of index) {{
+      // Skip if already in static gallery (match by model names)
+      const key = e.model_a + '|' + e.model_b;
+      if (existing.has(key)) continue;
+      existing.add(key);
+
+      const tag = (e.profile_tag || '').toUpperCase();
+      const color = tagColors[e.profile_tag] || '#6b7280';
+      const shortA = e.model_a.split('/').pop();
+      const shortB = e.model_b.split('/').pop();
+      const idx = grid.children.length;
+
+      const card = document.createElement('div');
+      card.className = 'pair-card';
+      card.style.borderTop = `3px solid ${{color}}`;
+      card.dataset.pair = key;
+      card.onclick = () => document.getElementById(`detail-dyn-${{idx}}`).classList.toggle('hidden');
+      card.innerHTML = `
+        <div class="pair-header">
+          <span class="tag" style="background:${{color}}">${{tag}}</span>
+          <span class="pair-frob" style="color:${{color}}">${{(e.mean_frob_relative||0).toFixed(4)}}</span>
+        </div>
+        <div class="pair-models">
+          <span class="model-name">${{shortA}}</span>
+          <span class="arrow">&#x2192;</span>
+          <span class="model-name">${{shortB}}</span>
+        </div>
+        <div class="pair-metrics">
+          <span title="Cosine similarity">cos ${{(e.mean_cosine_sim||0).toFixed(5)}}</span>
+          <span title="Effective rank">rank ${{(e.mean_effective_rank||0).toFixed(0)}}</span>
+          <span title="Top-20 concentration">conc ${{(e.mean_concentration||0).toFixed(3)}}</span>
+        </div>
+        <div id="detail-dyn-${{idx}}" class="pair-detail hidden">
+          <p>${{e.diagnosis_summary || ''}}</p>
+          <a class="btn-report" href="${{HF_PAIR}}${{e.pair_id}}.json"
+             onclick="event.stopPropagation()" target="_blank">
+            Full data (JSON) &#x2192;
+          </a>
+        </div>
+      `;
+      grid.appendChild(card);
+      added++;
+    }}
+
+    if (added > 0) {{
+      const total = grid.querySelectorAll('.pair-card').length;
+      sub.innerHTML = `Click any card to see the diagnostic summary. ${{total}} pairs analyzed.` +
+        ` <span style="color:var(--accent);font-size:12px">(includes community-shared results)</span>`;
+    }}
+  }} catch(e) {{
+    // Silently fail — static cards still work
+  }}
+}})();
 </script>
 
 </body></html>"""
