@@ -1,10 +1,11 @@
 """Landing page generator — unified portal for modeldelta.
 
 Generates a single-file HTML page with:
-  1. Hero section with tool description
-  2. Gallery of pre-computed pairs (clickable → opens full report)
-  3. "Compare your own" form (≤3B online, or generate CLI/Colab)
-  4. How it works section
+  1. Hero section
+  2. How it works
+  3. Diagnostic profiles
+  4. Compare your own models
+  5. Gallery (fully dynamic from HF dataset — search, filter, pagination)
 """
 
 from __future__ import annotations
@@ -13,7 +14,229 @@ import json
 from dataclasses import dataclass
 
 
-# JS notebook generator — kept outside the f-string to avoid triple-quote conflicts.
+# ── Gallery JS ───────────────────────────────────────────────────────────────
+# Kept outside the f-string (raw string, no escaping needed).
+_GALLERY_JS = r'''
+// ── Gallery state ──────────────────────────────────────────────────────────
+var _allPairs = [];
+var _activeTag = 'all';
+var _searchQuery = '';
+var _currentPage = 0;
+var _PAGE_SIZE = 9;
+var _TAG_COLORS = {surgical:'#10b981', standard:'#3b82f6', heavy:'#f59e0b', extreme:'#ef4444'};
+var _TAG_ORDER  = ['extreme', 'heavy', 'standard', 'surgical'];
+var _HF_INDEX   = 'https://huggingface.co/datasets/NikolayYudin/modeldelta-results/raw/main/index.json';
+var _HF_PAIR    = 'https://huggingface.co/datasets/NikolayYudin/modeldelta-results/raw/main/pairs/';
+
+async function initGallery() {
+  try {
+    var resp = await fetch(_HF_INDEX);
+    if (!resp.ok) throw new Error('fetch failed');
+    _allPairs = await resp.json();
+    _updateCounts();
+    _renderGallery();
+  } catch(e) {
+    var sub = document.getElementById('gallery-sub');
+    if (sub) sub.textContent = 'Could not load results from HuggingFace.';
+    var grid = document.getElementById('gallery-grid');
+    if (grid) grid.innerHTML = '';
+  }
+}
+
+function setTagFilter(tag) {
+  _activeTag = tag;
+  _currentPage = 0;
+  document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  var btn = document.getElementById('btn-' + tag);
+  if (btn) btn.classList.add('active');
+  _renderGallery();
+}
+
+var _searchTimer;
+function doSearch(val) {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(function() {
+    _searchQuery = val.trim().toLowerCase();
+    _currentPage = 0;
+    _renderGallery();
+  }, 200);
+}
+
+function goPage(p) {
+  _currentPage = p;
+  _renderGallery();
+  var el = document.getElementById('gallery');
+  if (el) el.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+function _isFiltering() {
+  return _activeTag !== 'all' || _searchQuery.length > 0;
+}
+
+function _getFeatured() {
+  var byTag = {};
+  for (var i = 0; i < _allPairs.length; i++) {
+    var p = _allPairs[i];
+    var t = p.profile_tag || 'standard';
+    if (!byTag[t]) byTag[t] = [];
+    byTag[t].push(p);
+  }
+  // Shuffle each bucket
+  for (var t in byTag) {
+    byTag[t] = byTag[t].sort(function() { return 0.5 - Math.random(); });
+  }
+  var featured = [];
+  for (var j = 0; j < _TAG_ORDER.length; j++) {
+    var bucket = byTag[_TAG_ORDER[j]] || [];
+    for (var k = 0; k < Math.min(3, bucket.length); k++) {
+      featured.push(bucket[k]);
+    }
+  }
+  return featured;
+}
+
+function _getFiltered() {
+  return _allPairs.filter(function(p) {
+    if (_activeTag !== 'all' && p.profile_tag !== _activeTag) return false;
+    if (_searchQuery) {
+      var q = _searchQuery;
+      var a = (p.model_a || '').toLowerCase();
+      var b = (p.model_b || '').toLowerCase();
+      if (a.indexOf(q) === -1 && b.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+}
+
+function _updateCounts() {
+  var counts = {};
+  for (var i = 0; i < _allPairs.length; i++) {
+    var t = _allPairs[i].profile_tag || 'standard';
+    counts[t] = (counts[t] || 0) + 1;
+  }
+  var allEl = document.getElementById('count-all');
+  if (allEl) allEl.textContent = _allPairs.length;
+  for (var tag in counts) {
+    var el = document.getElementById('count-' + tag);
+    if (el) el.textContent = counts[tag];
+  }
+}
+
+function _renderGallery() {
+  var grid = document.getElementById('gallery-grid');
+  var sub  = document.getElementById('gallery-sub');
+  var pagEl = document.getElementById('gallery-pagination');
+  if (!grid) return;
+
+  var pairs;
+  if (!_isFiltering()) {
+    pairs = _getFeatured();
+    sub.innerHTML = '<b>' + pairs.length + ' featured</b> — up to 3 per profile &middot; ' +
+      '<b>' + _allPairs.length + '</b> total in gallery';
+    pagEl.style.display = 'none';
+  } else {
+    var filtered = _getFiltered();
+    var totalPages = Math.max(1, Math.ceil(filtered.length / _PAGE_SIZE));
+    _currentPage = Math.min(_currentPage, totalPages - 1);
+    var start = _currentPage * _PAGE_SIZE;
+    var end   = start + _PAGE_SIZE;
+    pairs = filtered.slice(start, end);
+    var from = filtered.length === 0 ? 0 : start + 1;
+    var to   = Math.min(end, filtered.length);
+    sub.innerHTML = 'Showing <b>' + from + '&ndash;' + to + '</b> of <b>' + filtered.length + '</b> results';
+    if (totalPages > 1) {
+      _renderPagination(pagEl, totalPages);
+      pagEl.style.display = 'flex';
+    } else {
+      pagEl.style.display = 'none';
+    }
+  }
+
+  grid.innerHTML = '';
+  if (pairs.length === 0) {
+    grid.innerHTML = '<p style="color:#94a3b8;grid-column:1/-1;text-align:center;padding:48px 0">No results found.</p>';
+    return;
+  }
+  for (var i = 0; i < pairs.length; i++) {
+    grid.appendChild(_makeCard(pairs[i]));
+  }
+}
+
+function _makeCard(p) {
+  var tag    = (p.profile_tag || 'standard').toLowerCase();
+  var color  = _TAG_COLORS[tag] || '#6b7280';
+  var shortA = (p.model_a || '').split('/').pop();
+  var shortB = (p.model_b || '').split('/').pop();
+  var uid    = 'gd-' + Math.random().toString(36).slice(2, 9);
+  var reportLink = p.report_url
+    ? '<a class="btn-report" href="' + p.report_url + '" ' +
+      'onclick="event.stopPropagation()" target="_blank">Full report &#x2192;</a>'
+    : '';
+  var isHash = /^[0-9a-f]{15,16}$/.test(p.pair_id || '');
+  var dataLink = reportLink || (isHash
+    ? '<a class="btn-report" href="' + _HF_PAIR + p.pair_id + '.json" ' +
+      'onclick="event.stopPropagation()" target="_blank">Full data (JSON) &#x2192;</a>'
+    : '');
+
+  var card = document.createElement('div');
+  card.className = 'pair-card';
+  card.style.borderTop = '3px solid ' + color;
+  card.onclick = function() { document.getElementById(uid).classList.toggle('hidden'); };
+
+  card.innerHTML =
+    '<div class="pair-header">' +
+      '<span class="tag" style="background:' + color + '">' + tag.toUpperCase() + '</span>' +
+      '<span class="pair-frob" style="color:' + color + '" title="Mean \u2016\u0394W\u2016/\u2016W\u2016 \u2014 average relative weight change across all tensors">' +
+        (p.mean_frob_relative || 0).toFixed(4) + ' \u0394W/W' +
+      '</span>' +
+    '</div>' +
+    '<div class="pair-models">' +
+      '<span class="model-name" title="' + (p.model_a || '') + '">' + shortA + '</span>' +
+      '<span class="arrow">&#x2192;</span>' +
+      '<span class="model-name" title="' + (p.model_b || '') + '">' + shortB + '</span>' +
+    '</div>' +
+    '<div class="pair-metrics">' +
+      '<span title="Mean cosine similarity">cos ' + (p.mean_cosine_sim || 0).toFixed(5) + '</span>' +
+      '<span title="Mean effective rank">rank ' + (p.mean_effective_rank || 0).toFixed(0) + '</span>' +
+      '<span title="Top-20 concentration">conc ' + (p.mean_concentration || 0).toFixed(3) + '</span>' +
+    '</div>' +
+    '<div id="' + uid + '" class="pair-detail hidden">' +
+      '<p>' + (p.diagnosis_summary || '') + '</p>' +
+      dataLink +
+    '</div>';
+
+  return card;
+}
+
+function _renderPagination(el, totalPages) {
+  el.innerHTML = '';
+
+  function _btn(label, page, disabled, active) {
+    var b = document.createElement('button');
+    b.className = 'page-btn' + (active ? ' active' : '');
+    b.innerHTML = label;
+    b.disabled = disabled;
+    if (!disabled) b.onclick = function() { goPage(page); };
+    return b;
+  }
+
+  el.appendChild(_btn('&#x2190;', _currentPage - 1, _currentPage === 0, false));
+
+  var maxShow = 7;
+  var start = Math.max(0, _currentPage - 3);
+  var end   = Math.min(totalPages, start + maxShow);
+  if (end - start < maxShow) start = Math.max(0, end - maxShow);
+
+  for (var i = start; i < end; i++) {
+    el.appendChild(_btn(i + 1, i, false, i === _currentPage));
+  }
+
+  el.appendChild(_btn('&#x2192;', _currentPage + 1, _currentPage === totalPages - 1, false));
+}
+'''
+
+
+# ── Notebook generator JS ────────────────────────────────────────────────────
 # Uses r'''...''' since the JS code contains """ but not '''.
 _NOTEBOOK_JS = r'''
 // ── Notebook generator ──
@@ -295,7 +518,7 @@ function codeCell(source) {
 
 @dataclass
 class PairCard:
-    """Summary card for a pre-computed pair."""
+    """Summary card for a pre-computed pair (kept for backwards compatibility)."""
     model_a: str
     model_b: str
     profile_tag: str
@@ -305,12 +528,12 @@ class PairCard:
     mean_conc: float
     n_tensors: int
     diagnosis_summary: str
-    report_filename: str = ""  # link to full HTML report
+    report_filename: str = ""
 
 
 def pairs_from_results_dir(results_dir: str) -> list[PairCard]:
     """Load pair cards from a directory of JSON result files."""
-    import os, math
+    import os
     cards = []
     for fname in sorted(os.listdir(results_dir)):
         if not fname.endswith(".json"):
@@ -348,64 +571,17 @@ def generate_landing_page(
     pairs: list[PairCard] | None = None,
     results_dir: str | None = None,
 ) -> str:
-    """Generate the landing page HTML."""
-    if pairs is None and results_dir:
-        pairs = pairs_from_results_dir(results_dir)
-    if pairs is None:
-        pairs = []
+    """Generate the landing page HTML.
 
-    # Sort: extreme first (most interesting)
-    order = {"extreme": 0, "heavy": 1, "standard": 2, "surgical": 3}
-    pairs.sort(key=lambda p: (order.get(p.profile_tag, 9), -p.mean_frob))
-
-    # Build gallery cards
-    gallery_cards = ""
-    for i, p in enumerate(pairs):
-        tag_colors = {
-            "surgical": "#10b981",
-            "standard": "#3b82f6",
-            "heavy": "#f59e0b",
-            "extreme": "#ef4444",
-        }
-        accent = tag_colors.get(p.profile_tag, "#6b7280")
-
-        short_a = p.model_a.split("/")[-1] if "/" in p.model_a else p.model_a
-        short_b = p.model_b.split("/")[-1] if "/" in p.model_b else p.model_b
-
-        report_link = f"reports/{p.report_filename}" if p.report_filename else "#"
-
-        gallery_cards += f"""
-        <div class="pair-card" style="border-top: 3px solid {accent};"
-             data-pair="{p.model_a}|{p.model_b}"
-             onclick="document.getElementById('detail-{i}').classList.toggle('hidden')">
-          <div class="pair-header">
-            <span class="tag" style="background:{accent}">{p.profile_tag.upper()}</span>
-            <span class="pair-frob" style="color:{accent}">{p.mean_frob:.4f}</span>
-          </div>
-          <div class="pair-models">
-            <span class="model-name">{short_a}</span>
-            <span class="arrow">&#x2192;</span>
-            <span class="model-name">{short_b}</span>
-          </div>
-          <div class="pair-metrics">
-            <span title="Cosine similarity">cos {p.mean_cos:.5f}</span>
-            <span title="Effective rank">rank {p.mean_eff_rank:.0f}</span>
-            <span title="Top-20 concentration">conc {p.mean_conc:.3f}</span>
-          </div>
-          <div id="detail-{i}" class="pair-detail hidden">
-            <p>{p.diagnosis_summary}</p>
-            <a class="btn-report" href="{report_link}" onclick="event.stopPropagation()">
-              Full report &#x2192;
-            </a>
-          </div>
-        </div>
-        """
-
+    Gallery is fully dynamic (loaded from HF dataset) — pairs/results_dir kept
+    for backwards compatibility but no longer used for rendering.
+    """
     return f"""<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>modeldelta — See what changed inside any model</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x394;</text></svg>">
 <style>
   :root {{
     --bg: #0f172a;
@@ -432,7 +608,7 @@ def generate_landing_page(
   /* ── Hero ── */
   .hero {{
     text-align: center;
-    padding: 80px 20px 60px;
+    padding: 48px 20px 36px;
     background: linear-gradient(135deg, var(--bg) 0%, #1a1a2e 50%, #16213e 100%);
     position: relative;
     overflow: hidden;
@@ -440,10 +616,8 @@ def generate_landing_page(
   .hero::before {{
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
     background: radial-gradient(circle at 30% 50%, rgba(56,189,248,0.08) 0%, transparent 50%),
                 radial-gradient(circle at 70% 50%, rgba(129,140,248,0.06) 0%, transparent 50%);
     animation: pulse 8s ease-in-out infinite alternate;
@@ -453,11 +627,11 @@ def generate_landing_page(
     100% {{ transform: scale(1.1); opacity: 1; }}
   }}
   .hero h1 {{
-    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-size: clamp(2rem, 5vw, 3.2rem);
     font-weight: 800;
     letter-spacing: -0.02em;
     position: relative;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }}
   .hero h1 .highlight {{
     background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -466,27 +640,25 @@ def generate_landing_page(
     background-clip: text;
   }}
   .hero .tagline {{
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     color: var(--text2);
-    max-width: 600px;
-    margin: 0 auto 40px;
+    max-width: 560px;
+    margin: 0 auto 28px;
     position: relative;
   }}
-
-  /* ── Action buttons ── */
   .actions {{
     display: flex;
     gap: 12px;
     justify-content: center;
     flex-wrap: wrap;
     position: relative;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }}
   .btn {{
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 24px;
+    padding: 10px 22px;
     border-radius: 8px;
     font-size: 15px;
     font-weight: 600;
@@ -506,17 +678,15 @@ def generate_landing_page(
     border: 1px solid rgba(255,255,255,0.1);
   }}
   .btn-secondary:hover {{ background: #475569; transform: translateY(-2px); }}
-
   .install-cmd {{
     display: inline-block;
     background: var(--bg2);
     border: 1px solid var(--bg3);
     border-radius: 8px;
-    padding: 12px 20px;
+    padding: 10px 20px;
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
     font-size: 14px;
     color: var(--accent);
-    margin-top: 20px;
     position: relative;
     cursor: pointer;
   }}
@@ -526,20 +696,71 @@ def generate_landing_page(
   .section {{
     max-width: 1200px;
     margin: 0 auto;
-    padding: 60px 20px;
+    padding: 52px 20px;
   }}
   .section-title {{
-    font-size: 1.75rem;
+    font-size: 1.6rem;
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }}
   .section-sub {{
     color: var(--text2);
-    margin-bottom: 32px;
-    font-size: 1.05rem;
+    margin-bottom: 24px;
+    font-size: 1rem;
+    min-height: 1.4em;
   }}
 
-  /* ── Gallery ── */
+  /* ── Filter bar ── */
+  .filter-bar {{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }}
+  .filter-btn {{
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--bg3);
+    background: var(--bg2);
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }}
+  .filter-btn:hover {{ border-color: var(--accent); color: var(--text); }}
+  .filter-btn.active {{ background: var(--accent); color: #0f172a; border-color: transparent; }}
+  .filter-btn .count {{
+    display: inline-block;
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    padding: 1px 6px;
+    font-size: 11px;
+    margin-left: 4px;
+  }}
+  .filter-btn.active .count {{ background: rgba(0,0,0,0.25); }}
+  .search-wrap {{
+    flex: 1;
+    min-width: 160px;
+    max-width: 280px;
+    margin-left: auto;
+  }}
+  .search-wrap input {{
+    width: 100%;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--bg3);
+    background: var(--bg2);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+  }}
+  .search-wrap input:focus {{ outline: none; border-color: var(--accent); }}
+  .search-wrap input::placeholder {{ color: var(--text2); }}
+
+  /* ── Gallery grid ── */
   .gallery {{
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -574,7 +795,7 @@ def generate_landing_page(
   }}
   .pair-frob {{
     font-family: 'JetBrains Mono', monospace;
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     font-weight: 800;
   }}
   .pair-models {{
@@ -588,11 +809,12 @@ def generate_landing_page(
     font-weight: 700;
     font-size: 15px;
     color: #f1f5f9;
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }}
-  .arrow {{
-    color: var(--text2);
-    font-size: 18px;
-  }}
+  .arrow {{ color: var(--text2); font-size: 18px; }}
   .pair-metrics {{
     display: flex;
     gap: 16px;
@@ -623,11 +845,37 @@ def generate_landing_page(
   .btn-report:hover {{ background: #7dd3fc; transform: translateY(-1px); }}
   .hidden {{ display: none; }}
 
+  /* ── Pagination ── */
+  .pagination {{
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }}
+  .page-btn {{
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--bg3);
+    background: var(--bg2);
+    color: var(--text2);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }}
+  .page-btn:hover:not(:disabled) {{ border-color: var(--accent); color: var(--text); }}
+  .page-btn.active {{ background: var(--accent); color: #0f172a; border-color: transparent; font-weight: 700; }}
+  .page-btn:disabled {{ opacity: 0.35; cursor: default; }}
+
   /* ── Compare form ── */
   .compare-section {{
     background: var(--bg2);
     border-radius: var(--radius);
-    padding: 32px;
+    padding: 28px;
     margin-top: 20px;
   }}
   .form-row {{
@@ -649,7 +897,6 @@ def generate_landing_page(
   }}
   .form-input:focus {{ outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56,189,248,0.15); }}
   .form-input::placeholder {{ color: var(--text2); }}
-
   .method-cards {{
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -671,11 +918,7 @@ def generate_landing_page(
     align-items: center;
     gap: 8px;
   }}
-  .method-card p {{
-    font-size: 13px;
-    color: var(--text2);
-    margin-bottom: 12px;
-  }}
+  .method-card p {{ font-size: 13px; color: var(--text2); margin-bottom: 12px; }}
   .method-card code {{
     display: block;
     background: var(--bg2);
@@ -685,9 +928,7 @@ def generate_landing_page(
     color: var(--accent);
     overflow-x: auto;
   }}
-  .method-icon {{
-    font-size: 20px;
-  }}
+  .method-icon {{ font-size: 20px; }}
 
   /* ── How it works ── */
   .steps {{
@@ -706,10 +947,8 @@ def generate_landing_page(
     counter-increment: step;
     content: counter(step);
     position: absolute;
-    top: -12px;
-    left: 20px;
-    width: 28px;
-    height: 28px;
+    top: -12px; left: 20px;
+    width: 28px; height: 28px;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     border-radius: 50%;
     display: flex;
@@ -722,7 +961,7 @@ def generate_landing_page(
   .step h4 {{ margin-bottom: 8px; font-size: 15px; }}
   .step p {{ font-size: 13px; color: var(--text2); }}
 
-  /* ── Profile legend ── */
+  /* ── Profiles ── */
   .profiles {{
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -736,19 +975,14 @@ def generate_landing_page(
     border-radius: 8px;
     padding: 16px;
   }}
-  .profile-dot {{
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }}
+  .profile-dot {{ width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }}
   .profile-info {{ font-size: 13px; }}
   .profile-info strong {{ display: block; font-size: 14px; }}
 
   /* ── Footer ── */
   footer {{
     text-align: center;
-    padding: 40px 20px;
+    padding: 32px 20px;
     color: var(--text2);
     font-size: 13px;
     border-top: 1px solid var(--bg3);
@@ -756,43 +990,55 @@ def generate_landing_page(
   footer a {{ color: var(--accent); text-decoration: none; }}
   footer a:hover {{ text-decoration: underline; }}
 
-  /* ── Responsive ── */
   @media (max-width: 640px) {{
     .gallery {{ grid-template-columns: 1fr; }}
     .pair-metrics {{ flex-wrap: wrap; gap: 8px; }}
+    .model-name {{ max-width: 100%; }}
   }}
 </style>
 </head><body>
 
 <!-- ═══ HERO ═══ -->
 <div class="hero">
-  <h1>
-    <span class="highlight">modeldelta</span>
-  </h1>
+  <h1><span class="highlight">modeldelta</span></h1>
   <p class="tagline">
     See what changed inside any model checkpoint.<br>
     Weight deltas, SVD structure, and a diagnostic verdict.
   </p>
   <div class="actions">
     <a class="btn btn-primary" href="#compare">Compare models</a>
-    <a class="btn btn-secondary" href="#gallery">Browse results</a>
+    <a class="btn btn-secondary" href="#gallery">Browse gallery</a>
   </div>
   <div class="install-cmd" onclick="navigator.clipboard.writeText('pip install modeldelta')" title="Click to copy">
     $ pip install modeldelta
   </div>
 </div>
 
-<!-- ═══ GALLERY ═══ -->
-<div class="section" id="gallery">
-  <h2 class="section-title">Pre-computed comparisons</h2>
-  <p class="section-sub" id="gallery-sub">Click any card to see the diagnostic summary. {len(pairs)} base&#x2192;instruct pairs analyzed.</p>
-
-  <div class="gallery" id="gallery-grid">
-    {gallery_cards}
+<!-- ═══ HOW IT WORKS ═══ -->
+<div class="section">
+  <h2 class="section-title">How it works</h2>
+  <p class="section-sub">No GPU. No full model loading. Just math on weight deltas.</p>
+  <div class="steps">
+    <div class="step">
+      <h4>Stream tensors</h4>
+      <p>Downloads only safetensors files. Loads one tensor at a time &mdash; never both full models in RAM.</p>
+    </div>
+    <div class="step">
+      <h4>Compute deltas</h4>
+      <p>For each weight matrix: Frobenius norm, cosine similarity, sparsity. Memory-optimized in-place subtraction.</p>
+    </div>
+    <div class="step">
+      <h4>SVD analysis</h4>
+      <p>Full singular value decomposition of each delta. Effective rank, top-k concentration, spectral decay.</p>
+    </div>
+    <div class="step">
+      <h4>Diagnose</h4>
+      <p>Automatic classification: surgical, standard, heavy, or extreme. Human-readable conclusions, not just numbers.</p>
+    </div>
   </div>
 </div>
 
-<!-- ═══ PROFILES LEGEND ═══ -->
+<!-- ═══ DIAGNOSTIC PROFILES ═══ -->
 <div class="section">
   <h2 class="section-title">Diagnostic profiles</h2>
   <p class="section-sub">modeldelta classifies fine-tuning intensity into four categories.</p>
@@ -832,7 +1078,6 @@ def generate_landing_page(
 <div class="section" id="compare">
   <h2 class="section-title">Compare your own models</h2>
   <p class="section-sub">Choose the method that fits your models.</p>
-
   <div class="compare-section">
     <div class="form-row">
       <input class="form-input" id="model-a" placeholder="Base model (e.g. Qwen/Qwen2.5-3B)" />
@@ -857,35 +1102,34 @@ def generate_landing_page(
       </div>
       <div class="method-card">
         <h4><span class="method-icon">&#x26A1;</span> Online (&#x2264;3B)</h4>
-        <p>Small models computed in-browser. No install needed.</p>
-        <code>Coming soon &mdash; HF Space</code>
+        <p>Small models compared directly in the browser. No install, no Colab needed.</p>
+        <a class="btn btn-primary" style="font-size:13px;margin-top:4px;display:inline-flex;"
+           href="https://huggingface.co/spaces/NikolayYudin/modeldelta" target="_blank">
+          Open HF Space &#x2192;
+        </a>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══ HOW IT WORKS ═══ -->
-<div class="section">
-  <h2 class="section-title">How it works</h2>
-  <p class="section-sub">No GPU. No full model loading. Just math on weight deltas.</p>
-  <div class="steps">
-    <div class="step">
-      <h4>Stream tensors</h4>
-      <p>Downloads only safetensors files. Loads one tensor at a time &mdash; never both full models in RAM.</p>
-    </div>
-    <div class="step">
-      <h4>Compute deltas</h4>
-      <p>For each weight matrix: Frobenius norm, cosine similarity, sparsity. Memory-optimized in-place subtraction.</p>
-    </div>
-    <div class="step">
-      <h4>SVD analysis</h4>
-      <p>Full singular value decomposition of each delta. Effective rank, top-k concentration, spectral decay.</p>
-    </div>
-    <div class="step">
-      <h4>Diagnose</h4>
-      <p>Automatic classification: surgical, standard, heavy, or extreme. Human-readable conclusions, not just numbers.</p>
+<!-- ═══ GALLERY ═══ -->
+<div class="section" id="gallery">
+  <h2 class="section-title">Pre-computed comparisons</h2>
+
+  <div class="filter-bar">
+    <button class="filter-btn active" id="btn-all"      onclick="setTagFilter('all')">All <span class="count" id="count-all">—</span></button>
+    <button class="filter-btn" id="btn-extreme"         onclick="setTagFilter('extreme')" style="color:#ef4444">Extreme <span class="count" id="count-extreme">0</span></button>
+    <button class="filter-btn" id="btn-heavy"           onclick="setTagFilter('heavy')"   style="color:#f59e0b">Heavy <span class="count" id="count-heavy">0</span></button>
+    <button class="filter-btn" id="btn-standard"        onclick="setTagFilter('standard')" style="color:#38bdf8">Standard <span class="count" id="count-standard">0</span></button>
+    <button class="filter-btn" id="btn-surgical"        onclick="setTagFilter('surgical')" style="color:#10b981">Surgical <span class="count" id="count-surgical">0</span></button>
+    <div class="search-wrap">
+      <input type="text" id="search-input" placeholder="Search model&hellip;" oninput="doSearch(this.value)">
     </div>
   </div>
+
+  <p class="section-sub" id="gallery-sub">Loading&hellip;</p>
+  <div class="gallery" id="gallery-grid"></div>
+  <div class="pagination" id="gallery-pagination" style="display:none"></div>
 </div>
 
 <footer>
@@ -895,7 +1139,7 @@ def generate_landing_page(
 </footer>
 
 <script>
-// Update CLI command from form inputs
+// ── Compare form: live CLI command ──
 const modelA = document.getElementById('model-a');
 const modelB = document.getElementById('model-b');
 const cliCmd = document.getElementById('cli-cmd');
@@ -907,78 +1151,8 @@ function updateCmd() {{
 modelA.addEventListener('input', updateCmd);
 modelB.addEventListener('input', updateCmd);
 {_NOTEBOOK_JS}
-
-// ── Dynamic gallery: fetch shared results from HF ──
-(async function loadSharedResults() {{
-  const HF_INDEX = 'https://huggingface.co/datasets/NikolayYudin/modeldelta-results/raw/main/index.json';
-  const HF_PAIR  = 'https://huggingface.co/datasets/NikolayYudin/modeldelta-results/raw/main/pairs/';
-  const grid = document.getElementById('gallery-grid');
-  const sub = document.getElementById('gallery-sub');
-  const tagColors = {{surgical:'#10b981', standard:'#3b82f6', heavy:'#f59e0b', extreme:'#ef4444'}};
-
-  // Collect existing pair IDs (from static cards) to avoid duplicates
-  const existing = new Set();
-  grid.querySelectorAll('[data-pair]').forEach(el => existing.add(el.dataset.pair));
-
-  try {{
-    const resp = await fetch(HF_INDEX);
-    if (!resp.ok) return;
-    const index = await resp.json();
-
-    let added = 0;
-    for (const e of index) {{
-      // Skip if already in static gallery (match by model names)
-      const key = e.model_a + '|' + e.model_b;
-      if (existing.has(key)) continue;
-      existing.add(key);
-
-      const tag = (e.profile_tag || '').toUpperCase();
-      const color = tagColors[e.profile_tag] || '#6b7280';
-      const shortA = e.model_a.split('/').pop();
-      const shortB = e.model_b.split('/').pop();
-      const idx = grid.children.length;
-
-      const card = document.createElement('div');
-      card.className = 'pair-card';
-      card.style.borderTop = `3px solid ${{color}}`;
-      card.dataset.pair = key;
-      card.onclick = () => document.getElementById(`detail-dyn-${{idx}}`).classList.toggle('hidden');
-      card.innerHTML = `
-        <div class="pair-header">
-          <span class="tag" style="background:${{color}}">${{tag}}</span>
-          <span class="pair-frob" style="color:${{color}}">${{(e.mean_frob_relative||0).toFixed(4)}}</span>
-        </div>
-        <div class="pair-models">
-          <span class="model-name">${{shortA}}</span>
-          <span class="arrow">&#x2192;</span>
-          <span class="model-name">${{shortB}}</span>
-        </div>
-        <div class="pair-metrics">
-          <span title="Cosine similarity">cos ${{(e.mean_cosine_sim||0).toFixed(5)}}</span>
-          <span title="Effective rank">rank ${{(e.mean_effective_rank||0).toFixed(0)}}</span>
-          <span title="Top-20 concentration">conc ${{(e.mean_concentration||0).toFixed(3)}}</span>
-        </div>
-        <div id="detail-dyn-${{idx}}" class="pair-detail hidden">
-          <p>${{e.diagnosis_summary || ''}}</p>
-          <a class="btn-report" href="${{HF_PAIR}}${{e.pair_id}}.json"
-             onclick="event.stopPropagation()" target="_blank">
-            Full data (JSON) &#x2192;
-          </a>
-        </div>
-      `;
-      grid.appendChild(card);
-      added++;
-    }}
-
-    if (added > 0) {{
-      const total = grid.querySelectorAll('.pair-card').length;
-      sub.innerHTML = `Click any card to see the diagnostic summary. ${{total}} pairs analyzed.` +
-        ` <span style="color:var(--accent);font-size:12px">(includes community-shared results)</span>`;
-    }}
-  }} catch(e) {{
-    // Silently fail — static cards still work
-  }}
-}})();
+{_GALLERY_JS}
+initGallery();
 </script>
 
 </body></html>"""

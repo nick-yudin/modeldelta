@@ -223,6 +223,7 @@ def generate_html(
     mean_conc = np.mean([m["concentration_top_k"] for m in svd_mods if m.get("concentration_top_k")])
     mean_cos = np.mean([min(1.0, m["cosine_sim"]) for m in modules])
     mean_sparsity = np.mean([m["sparsity"] for m in modules])
+    mean_frob_relative = np.mean([m["frob_norm_relative"] for m in modules])
     total_frob = math.sqrt(sum(m["frob_norm"] ** 2 for m in modules))
 
     # Table rows
@@ -322,6 +323,7 @@ def generate_html(
 {_model_info_html(meta_a, meta_b)}
 <div class='summary'>
   <div class='card'><div class='value'>{len(modules)}</div><div class='label'>Tensors analyzed</div></div>
+  <div class='card'><div class='value'>{mean_frob_relative:.4f}</div><div class='label'>Mean ||&#x394;W||/||W||</div></div>
   <div class='card'><div class='value'>{total_frob:.2f}</div><div class='label'>Total ||&#x394;W||</div></div>
   <div class='card'><div class='value'>{mean_cos:.5f}</div><div class='label'>Mean cosine sim</div></div>
   <div class='card'><div class='value'>{mean_eff_rank:.1f}</div><div class='label'>Mean eff. rank</div></div>
