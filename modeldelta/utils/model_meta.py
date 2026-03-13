@@ -133,10 +133,11 @@ def validate_pair(
         if not _has_weights(meta_b) and not os.path.isdir(model_b):
             warnings.append(f"{model_b}: no weight files found (safetensors or pytorch_model.bin)")
 
-        # Check architecture compatibility (total shard count)
+        # Check architecture compatibility (shard count, same format only)
+        same_format = (meta_a.n_safetensors > 0) == (meta_b.n_safetensors > 0)
         shards_a = meta_a.n_safetensors or meta_a.n_bin
         shards_b = meta_b.n_safetensors or meta_b.n_bin
-        if shards_a > 0 and shards_b > 0 and abs(shards_a - shards_b) > 2:
+        if same_format and shards_a > 0 and shards_b > 0 and abs(shards_a - shards_b) > 2:
             warnings.append(
                 f"Shard count mismatch: {model_a} has {shards_a}, "
                 f"{model_b} has {shards_b} — models may be incompatible"
