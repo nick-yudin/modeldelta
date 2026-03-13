@@ -24,6 +24,7 @@ class ModelMeta:
     likes: int = 0
     n_safetensors: int = 0
     safetensors_gb: float = 0.0
+    n_bin: int = 0
     gated: bool = False
     error: str | None = None
 
@@ -82,6 +83,8 @@ def fetch_model_meta(model_id: str, token: str | None = None) -> ModelMeta:
 
     card = info.card_data
     safetensors = [s for s in info.siblings if s.rfilename.endswith(".safetensors")]
+    bin_files = [s for s in info.siblings
+                 if s.rfilename.endswith(".bin") and "pytorch_model" in s.rfilename]
     total_gb = sum(s.size for s in safetensors if s.size) / 1e9
 
     return ModelMeta(
@@ -96,6 +99,7 @@ def fetch_model_meta(model_id: str, token: str | None = None) -> ModelMeta:
         likes=info.likes or 0,
         n_safetensors=len(safetensors),
         safetensors_gb=round(total_gb, 2),
+        n_bin=len(bin_files),
         gated=bool(info.gated),
     )
 
@@ -120,18 +124,22 @@ def validate_pair(
         warnings.append(f"Model B not found: {model_b}")
 
     if meta_a.exists and meta_b.exists:
-        # Check safetensors availability
-        if meta_a.n_safetensors == 0 and not os.path.isdir(model_a):
-            warnings.append(f"{model_a}: no safetensors files found")
-        if meta_b.n_safetensors == 0 and not os.path.isdir(model_b):
-            warnings.append(f"{model_b}: no safetensors files found")
+        # Check weight file availability (safetensors preferred, .bin also supported)
+        def _has_weights(meta: ModelMeta) -> bool:
+            return meta.n_safetensors > 0 or meta.n_bin > 0
 
-        # Check architecture compatibility (same number of safetensors)
-        if (meta_a.n_safetensors > 0 and meta_b.n_safetensors > 0
-                and abs(meta_a.n_safetensors - meta_b.n_safetensors) > 2):
+        if not _has_weights(meta_a) and not os.path.isdir(model_a):
+            warnings.append(f"{model_a}: no weight files found (safetensors or pytorch_model.bin)")
+        if not _has_weights(meta_b) and not os.path.isdir(model_b):
+            warnings.append(f"{model_b}: no weight files found (safetensors or pytorch_model.bin)")
+
+        # Check architecture compatibility (total shard count)
+        shards_a = meta_a.n_safetensors or meta_a.n_bin
+        shards_b = meta_b.n_safetensors or meta_b.n_bin
+        if shards_a > 0 and shards_b > 0 and abs(shards_a - shards_b) > 2:
             warnings.append(
-                f"Shard count mismatch: {model_a} has {meta_a.n_safetensors}, "
-                f"{model_b} has {meta_b.n_safetensors} — models may be incompatible"
+                f"Shard count mismatch: {model_a} has {shards_a}, "
+                f"{model_b} has {shards_b} — models may be incompatible"
             )
 
         # Check base_model consistency
