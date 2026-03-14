@@ -156,7 +156,7 @@ def generate_html(
     for ax, matrix, title, cmap, extra_kw in [
         (axes1[0, 0], frob_matrix, "||ΔW||/||W||", "Reds", {}),
         (axes1[0, 1], cos_matrix, "Cosine similarity", "RdYlGn",
-         {"vmin": float(np.nanmin(cos_matrix)), "vmax": 1.0}),
+         {"vmin": float(np.nanmin(cos_matrix)) if cos_matrix.size > 0 and not np.all(np.isnan(cos_matrix)) else 0.0, "vmax": 1.0}),
         (axes1[1, 0], rank_matrix, "Effective rank of ΔW", "viridis", {}),
         (axes1[1, 1], conc_matrix, f"Top-{top_k} concentration", "Oranges", {}),
     ]:
