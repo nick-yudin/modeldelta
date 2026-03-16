@@ -66,6 +66,15 @@ def _fmt_count(n: int) -> str:
     return str(n)
 
 
+def _normalize_license(val) -> str | None:
+    """HF API sometimes returns license as a list instead of str."""
+    if val is None:
+        return None
+    if isinstance(val, list):
+        return ", ".join(str(v) for v in val) if val else None
+    return str(val)
+
+
 def fetch_model_meta(model_id: str, token: str | None = None) -> ModelMeta:
     """Fetch metadata from HuggingFace Hub. Fast — no model download."""
     if os.path.isdir(model_id):
@@ -90,9 +99,9 @@ def fetch_model_meta(model_id: str, token: str | None = None) -> ModelMeta:
     return ModelMeta(
         model_id=model_id,
         exists=True,
-        base_model=getattr(card, "base_model", None) if card else None,
+        base_model=_normalize_license(getattr(card, "base_model", None)) if card else None,
         pipeline_tag=info.pipeline_tag,
-        license=getattr(card, "license", None) if card else None,
+        license=_normalize_license(getattr(card, "license", None)) if card else None,
         library=info.library_name,
         tags=info.tags[:15] if info.tags else None,
         downloads=info.downloads or 0,
